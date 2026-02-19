@@ -141,6 +141,29 @@
             font-weight: 500;
         }
 
+        .crew-list {
+            list-style: none;
+            margin-top: 16px;
+        }
+
+        .crew-list li {
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .crew-list li .crew-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .crew-list li .crew-detail {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
         .expense-list li {
             flex-direction: column;
             align-items: flex-start;
@@ -417,6 +440,52 @@
             padding: 8px 12px;
             font-size: 0.95rem;
         }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .modal-actions .btn-primary {
+            flex: 1;
+        }
+
+        .crew-list li .crew-item-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .crew-list li .crew-item-actions button {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
@@ -452,6 +521,48 @@
         </div>
     </div>
 
+    <!-- Join preview: show existing crew and choose "already a member" or "join as new" -->
+    <div id="joinPreviewRoot" class="screen" style="display: none;">
+        <div class="landing-wrap">
+            <div class="landing-title">
+                <h1 id="joinPreviewTripName">—</h1>
+                <p class="muted">Code: <code id="joinPreviewTripCode">------</code></p>
+            </div>
+            <div class="card" style="max-width: 480px; margin: 0 auto;">
+                <h2 style="font-size: 1.2rem; margin-bottom: 12px;">Who’s on this trip</h2>
+                <ul class="crew-list" id="joinPreviewCrewList">
+                    <li class="empty-state">Loading…</li>
+                </ul>
+                <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
+                    <button type="button" class="btn-primary" onclick="joinAsExistingMember()">I'm already a member</button>
+                    <button type="button" class="btn-secondary" onclick="joinAsNewMember()">Join as new member</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Crew sign-up form (shown when joining or creating a trip, before entering the app) -->
+    <div id="crewFormRoot" class="screen" style="display: none;">
+        <div class="landing-wrap">
+            <div class="landing-title">
+                <h1 id="crewFormTitle">Add yourself to the crew</h1>
+                <p>Add your travel details for this trip.</p>
+            </div>
+            <div class="card" style="max-width: 480px; margin: 0 auto;">
+                <form id="crewForm">
+                    <input id="crewName" type="text" placeholder="Your name" required>
+                    <input id="crewEmail" type="email" placeholder="Email" required>
+                    <input id="crewArrivalFlight" type="text" placeholder="Arrival flight (e.g. AA 123)">
+                    <input id="crewArrivalDatetime" type="datetime-local" placeholder="Arrival date & time">
+                    <input id="crewDepartureFlight" type="text" placeholder="Departure flight (e.g. AA 456)">
+                    <input id="crewDepartureDatetime" type="datetime-local" placeholder="Departure date & time">
+                    <div id="crewFormError" class="error" style="margin-bottom: 12px;"></div>
+                    <button type="submit" id="crewFormSubmit" class="btn-primary" style="width: 100%;">Save & Enter Trip</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Main app (shown after trip is selected) -->
     <div id="appRoot" style="display: none;">
         <div class="container">
@@ -466,15 +577,13 @@
             </header>
 
             <div class="grid">
-                <!-- Friends Section -->
+                <!-- Crew Section -->
                 <div class="card">
-                    <h2><span>👥</span> Friends</h2>
-                    <div class="input-row">
-                        <input type="text" id="friendName" placeholder="Enter friend's name">
-                        <button class="btn-primary" onclick="addFriend()">Add</button>
-                    </div>
-                    <ul class="friend-list" id="friendList">
-                        <li class="empty-state">Add friends to get started</li>
+                    <h2><span>✈️</span> Crew</h2>
+                    <p class="muted" style="margin-bottom: 12px; font-size: 0.9rem;">Trip members and their flight details. Expense splitting uses crew members.</p>
+                    <button type="button" class="btn-secondary" style="margin-bottom: 16px;" onclick="openCrewMemberModal()">Add Crew Member</button>
+                    <ul class="crew-list" id="crewList">
+                        <li class="empty-state">Loading crew…</li>
                     </ul>
                 </div>
 
@@ -522,12 +631,34 @@
                         <div class="value" id="totalSpent">$0.00</div>
                     </div>
                     <div class="balance-grid" id="balanceGrid">
-                        <div class="empty-state">Add friends and expenses to see balances</div>
+                        <div class="empty-state">Add crew and expenses to see balances</div>
                     </div>
                     <div class="settlements" id="settlements" style="display: none;">
                         <h3>How to Settle Up</h3>
                         <div id="settlementList"></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Add/Edit Crew Member Modal -->
+            <div id="crewMemberModal" class="modal" style="display: none;">
+                <div class="modal-backdrop" onclick="closeCrewMemberModal()"></div>
+                <div class="modal-content card">
+                    <h2><span>✈️</span> <span id="crewModalTitle">Add Crew Member</span></h2>
+                    <form id="crewMemberForm" onsubmit="saveCrewMember(); return false;">
+                        <input type="hidden" id="crewMemberId" value="">
+                        <input id="modalCrewName" type="text" placeholder="Name" required>
+                        <input id="modalCrewEmail" type="email" placeholder="Email" required>
+                        <input id="modalCrewArrivalFlight" type="text" placeholder="Arrival flight (e.g. AA 123)">
+                        <input id="modalCrewArrivalDatetime" type="datetime-local" placeholder="Arrival date & time">
+                        <input id="modalCrewDepartureFlight" type="text" placeholder="Departure flight (e.g. AA 456)">
+                        <input id="modalCrewDepartureDatetime" type="datetime-local" placeholder="Departure date & time">
+                        <div id="crewMemberModalError" class="error" style="margin-bottom: 12px;"></div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-secondary" onclick="closeCrewMemberModal()">Cancel</button>
+                            <button type="submit" id="crewMemberModalSubmit" class="btn-primary">Save</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -546,6 +677,7 @@
         const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let currentTrip = null;
         let storageKeyPrefix = null;
+        let pendingJoinTrip = null;
 
         function normalizeTripCode(input) {
             return String(input || '').trim().toUpperCase().replace(/\s+/g, '');
@@ -612,14 +744,106 @@
             setLandingError('');
             document.getElementById('landingRoot').style.display = 'flex';
             document.getElementById('appRoot').style.display = 'none';
+            document.getElementById('joinPreviewRoot').style.display = 'none';
+            document.getElementById('crewFormRoot').style.display = 'none';
+            pendingJoinTrip = null;
+        }
+
+        async function showJoinPreview(tripRow) {
+            pendingJoinTrip = tripRow;
+            document.getElementById('landingRoot').style.display = 'none';
+            document.getElementById('appRoot').style.display = 'none';
+            document.getElementById('joinPreviewRoot').style.display = 'flex';
+            document.getElementById('crewFormRoot').style.display = 'none';
+
+            document.getElementById('joinPreviewTripName').textContent = tripRow.trip_name || '—';
+            document.getElementById('joinPreviewTripCode').textContent = tripRow.trip_code || '------';
+
+            const listEl = document.getElementById('joinPreviewCrewList');
+            listEl.innerHTML = '<li class="empty-state">Loading…</li>';
+            try {
+                const crew = await fetchCrewForTrip(tripRow.trip_code);
+                if (!crew.length) {
+                    listEl.innerHTML = '<li class="empty-state">No crew members yet.</li>';
+                } else {
+                    listEl.innerHTML = crew.map(c => `
+                        <li>
+                            <div class="crew-name">${escapeHtml(c.name)}</div>
+                            <div class="crew-detail">${escapeHtml(c.email)}</div>
+                        </li>
+                    `).join('');
+                }
+            } catch {
+                listEl.innerHTML = '<li class="empty-state">Could not load crew list.</li>';
+            }
+        }
+
+        function hideJoinPreview() {
+            document.getElementById('joinPreviewRoot').style.display = 'none';
+        }
+
+        async function fetchCrewForTrip(tripCode) {
+            if (!tripCode) return [];
+            const { data, error } = await supabaseClient
+                .from('crew')
+                .select('name, email')
+                .eq('trip_code', tripCode)
+                .order('name');
+            if (error) throw error;
+            return data || [];
+        }
+
+        function joinAsExistingMember() {
+            if (!pendingJoinTrip) return;
+            hideJoinPreview();
+            enterTrip(pendingJoinTrip);
+            showApp();
+        }
+
+        function joinAsNewMember() {
+            if (!pendingJoinTrip) return;
+            hideJoinPreview();
+            showCrewForm(pendingJoinTrip, false);
+        }
+
+        function showCrewForm(tripRow, isCreate) {
+            pendingJoinTrip = tripRow;
+            document.getElementById('landingRoot').style.display = 'none';
+            document.getElementById('appRoot').style.display = 'none';
+            document.getElementById('joinPreviewRoot').style.display = 'none';
+            document.getElementById('crewFormRoot').style.display = 'flex';
+            const titleEl = document.getElementById('crewFormTitle');
+            if (titleEl) titleEl.textContent = isCreate ? 'Add yourself to the crew' : 'Join the crew';
+            setCrewFormError('');
+            document.getElementById('crewForm').reset();
+        }
+
+        function hideCrewForm() {
+            document.getElementById('crewFormRoot').style.display = 'none';
+            pendingJoinTrip = null;
+        }
+
+        function setCrewFormError(message) {
+            const el = document.getElementById('crewFormError');
+            if (!el) return;
+            if (!message) {
+                el.style.display = 'none';
+                el.textContent = '';
+                return;
+            }
+            el.style.display = 'block';
+            el.textContent = message;
         }
 
         function showApp() {
             document.getElementById('landingRoot').style.display = 'none';
+            document.getElementById('joinPreviewRoot').style.display = 'none';
+            document.getElementById('crewFormRoot').style.display = 'none';
             document.getElementById('appRoot').style.display = 'block';
 
             document.getElementById('tripNameDisplay').textContent = currentTrip?.trip_name || '—';
             document.getElementById('tripCodeDisplay').textContent = currentTrip?.trip_code || '------';
+            loadCrew();
         }
 
         async function createTrip(tripName) {
@@ -662,7 +886,7 @@
             persistCurrentTrip(tripRow);
 
             // Reset in-memory state for the selected trip, then load namespaced storage.
-            friends = [];
+            crewMembers = [];
             expenses = [];
             activities = [];
             loadData();
@@ -685,7 +909,7 @@
                 // If Supabase is unreachable, fall back to the persisted info so the app can still be used.
                 currentTrip = persisted;
                 storageKeyPrefix = `vegas_${persisted.trip_code}_`;
-                friends = [];
+                crewMembers = [];
                 expenses = [];
                 activities = [];
                 loadData();
@@ -702,7 +926,7 @@
             try {
                 const tripName = document.getElementById('createTripName').value;
                 const tripRow = await createTrip(tripName);
-                await enterTrip(tripRow);
+                showCrewForm(tripRow, true);
             } catch (e) {
                 setLandingError(e?.message || 'Could not create trip. Please try again.');
             } finally {
@@ -722,11 +946,283 @@
                     setLandingError('Trip code not found. Double-check the code and try again.');
                     return;
                 }
-                await enterTrip(tripRow);
+                showJoinPreview(tripRow);
             } catch (e) {
                 setLandingError(e?.message || 'Could not join trip. Please try again.');
             } finally {
                 setBusy(btn, false);
+            }
+        }
+
+        async function saveCrewAndEnterTrip() {
+            const name = document.getElementById('crewName').value.trim();
+            const email = document.getElementById('crewEmail').value.trim();
+            const arrival_flight = document.getElementById('crewArrivalFlight').value.trim();
+            const arrival_datetime = document.getElementById('crewArrivalDatetime').value || null;
+            const departure_flight = document.getElementById('crewDepartureFlight').value.trim();
+            const departure_datetime = document.getElementById('crewDepartureDatetime').value || null;
+
+            if (!name || !email) {
+                setCrewFormError('Name and email are required.');
+                return;
+            }
+            if (!pendingJoinTrip?.trip_code) {
+                setCrewFormError('Session expired. Please join the trip again.');
+                return;
+            }
+
+            const btn = document.getElementById('crewFormSubmit');
+            setCrewFormError('');
+            setBusy(btn, true, 'Saving...');
+
+            try {
+                const { error } = await supabaseClient
+                    .from('crew')
+                    .insert({
+                        trip_code: pendingJoinTrip.trip_code,
+                        name,
+                        email,
+                        arrival_flight: arrival_flight || null,
+                        arrival_datetime: arrival_datetime ? new Date(arrival_datetime).toISOString() : null,
+                        departure_flight: departure_flight || null,
+                        departure_datetime: departure_datetime ? new Date(departure_datetime).toISOString() : null
+                    });
+                if (error) throw error;
+                const tripRow = pendingJoinTrip;
+                hideCrewForm();
+                await enterTrip(tripRow);
+            } catch (e) {
+                setCrewFormError(e?.message || 'Could not save. Please try again.');
+            } finally {
+                setBusy(btn, false);
+            }
+        }
+
+        async function loadCrew() {
+            const listEl = document.getElementById('crewList');
+            if (!listEl || !currentTrip?.trip_code) return;
+
+            listEl.innerHTML = '<li class="empty-state">Loading crew…</li>';
+            try {
+                const { data, error } = await supabaseClient
+                    .from('crew')
+                    .select('id, name, email, arrival_flight, arrival_datetime, departure_flight, departure_datetime')
+                    .eq('trip_code', currentTrip.trip_code)
+                    .order('name');
+                if (error) throw error;
+                crewMembers = data || [];
+                renderCrew(crewMembers);
+                updateExpensePersonOptions();
+                renderBalances();
+            } catch (e) {
+                listEl.innerHTML = '<li class="empty-state">Could not load crew. Try again later.</li>';
+                crewMembers = [];
+                updateExpensePersonOptions();
+                renderBalances();
+            }
+        }
+
+        function renderCrew(crew) {
+            const listEl = document.getElementById('crewList');
+            if (!listEl) return;
+
+            if (!crew.length) {
+                listEl.innerHTML = '<li class="empty-state">No crew members yet. Join with the trip code to add yourself.</li>';
+                return;
+            }
+
+            function formatDt(iso) {
+                if (!iso) return '';
+                try {
+                    const d = new Date(iso);
+                    return d.toLocaleString('en-US', {
+                        weekday: 'short', month: 'short', day: 'numeric',
+                        hour: 'numeric', minute: '2-digit'
+                    });
+                } catch {
+                    return iso;
+                }
+            }
+
+            listEl.innerHTML = crew.map(c => {
+                const parts = [];
+                if (c.arrival_flight || c.arrival_datetime) {
+                    parts.push('Arrive: ' + [c.arrival_flight, formatDt(c.arrival_datetime)].filter(Boolean).join(' · '));
+                }
+                if (c.departure_flight || c.departure_datetime) {
+                    parts.push('Depart: ' + [c.departure_flight, formatDt(c.departure_datetime)].filter(Boolean).join(' · '));
+                }
+                const id = c.id == null ? '' : String(c.id);
+                return `
+                    <li data-crew-id="${escapeHtml(id)}">
+                        <div class="crew-name">${escapeHtml(c.name)}</div>
+                        <div class="crew-detail">${escapeHtml(c.email)}</div>
+                        ${parts.length ? parts.map(p => `<div class="crew-detail">${escapeHtml(p)}</div>`).join('') : ''}
+                        <div class="crew-item-actions">
+                            <button type="button" class="btn-secondary" onclick="openCrewMemberModal(this.closest('li').dataset.crewId)">Edit</button>
+                            <button type="button" class="btn-danger" onclick="deleteCrewMember(this.closest('li').dataset.crewId)">Delete</button>
+                        </div>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        function updateExpensePersonOptions() {
+            const payer = document.getElementById('expensePayer');
+            const splitGroup = document.getElementById('splitBetween');
+            if (!payer || !splitGroup) return;
+
+            const names = crewMembers.map(c => c.name);
+            if (names.length === 0) {
+                payer.innerHTML = '<option value="">Who paid?</option>';
+                splitGroup.innerHTML = '<span class="muted" style="font-size: 0.9rem;">Add crew members to split expenses.</span>';
+                return;
+            }
+            payer.innerHTML = '<option value="">Who paid?</option>' +
+                names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+            splitGroup.innerHTML = names.map(n => `
+                <label>
+                    <input type="checkbox" value="${escapeHtml(n)}">
+                    ${escapeHtml(n)}
+                </label>
+            `).join('');
+        }
+
+        function escapeHtml(s) {
+            if (s == null) return '';
+            const div = document.createElement('div');
+            div.textContent = s;
+            return div.innerHTML;
+        }
+
+        function isoToDatetimeLocal(iso) {
+            if (!iso) return '';
+            try {
+                const d = new Date(iso);
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const h = String(d.getHours()).padStart(2, '0');
+                const min = String(d.getMinutes()).padStart(2, '0');
+                return `${y}-${m}-${day}T${h}:${min}`;
+            } catch {
+                return '';
+            }
+        }
+
+        function openCrewMemberModal(crewId) {
+            const modal = document.getElementById('crewMemberModal');
+            const titleEl = document.getElementById('crewModalTitle');
+            const idInput = document.getElementById('crewMemberId');
+            const form = document.getElementById('crewMemberForm');
+            if (!modal || !titleEl || !idInput || !form) return;
+
+            setCrewMemberModalError('');
+            form.reset();
+            idInput.value = '';
+
+            if (crewId) {
+                const member = crewMembers.find(c => String(c.id) === String(crewId));
+                if (member) {
+                    titleEl.textContent = 'Edit Crew Member';
+                    idInput.value = String(member.id);
+                    document.getElementById('modalCrewName').value = member.name || '';
+                    document.getElementById('modalCrewEmail').value = member.email || '';
+                    document.getElementById('modalCrewArrivalFlight').value = member.arrival_flight || '';
+                    document.getElementById('modalCrewArrivalDatetime').value = isoToDatetimeLocal(member.arrival_datetime);
+                    document.getElementById('modalCrewDepartureFlight').value = member.departure_flight || '';
+                    document.getElementById('modalCrewDepartureDatetime').value = isoToDatetimeLocal(member.departure_datetime);
+                }
+            } else {
+                titleEl.textContent = 'Add Crew Member';
+            }
+            modal.style.display = 'flex';
+        }
+
+        function closeCrewMemberModal() {
+            const modal = document.getElementById('crewMemberModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function setCrewMemberModalError(message) {
+            const el = document.getElementById('crewMemberModalError');
+            if (!el) return;
+            if (!message) {
+                el.style.display = 'none';
+                el.textContent = '';
+                return;
+            }
+            el.style.display = 'block';
+            el.textContent = message;
+        }
+
+        async function saveCrewMember() {
+            const idInput = document.getElementById('crewMemberId');
+            const id = (idInput && idInput.value) ? idInput.value.trim() : null;
+            const name = document.getElementById('modalCrewName').value.trim();
+            const email = document.getElementById('modalCrewEmail').value.trim();
+            const arrival_flight = document.getElementById('modalCrewArrivalFlight').value.trim();
+            const arrival_datetime = document.getElementById('modalCrewArrivalDatetime').value || null;
+            const departure_flight = document.getElementById('modalCrewDepartureFlight').value.trim();
+            const departure_datetime = document.getElementById('modalCrewDepartureDatetime').value || null;
+
+            if (!name || !email) {
+                setCrewMemberModalError('Name and email are required.');
+                return;
+            }
+            if (!currentTrip?.trip_code) {
+                setCrewMemberModalError('No trip selected.');
+                return;
+            }
+
+            const btn = document.getElementById('crewMemberModalSubmit');
+            setCrewMemberModalError('');
+            setBusy(btn, true, 'Saving...');
+
+            try {
+                const payload = {
+                    name,
+                    email,
+                    arrival_flight: arrival_flight || null,
+                    arrival_datetime: arrival_datetime ? new Date(arrival_datetime).toISOString() : null,
+                    departure_flight: departure_flight || null,
+                    departure_datetime: departure_datetime ? new Date(departure_datetime).toISOString() : null
+                };
+                if (id) {
+                    const { error } = await supabaseClient
+                        .from('crew')
+                        .update(payload)
+                        .eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient
+                        .from('crew')
+                        .insert({ trip_code: currentTrip.trip_code, ...payload });
+                    if (error) throw error;
+                }
+                closeCrewMemberModal();
+                await loadCrew();
+            } catch (e) {
+                setCrewMemberModalError(e?.message || 'Could not save. Please try again.');
+            } finally {
+                setBusy(btn, false);
+            }
+        }
+
+        async function deleteCrewMember(crewId) {
+            if (!crewId || !currentTrip?.trip_code) return;
+            if (!confirm('Remove this crew member from the trip? Expenses that reference them will still show their name.')) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('crew')
+                    .delete()
+                    .eq('id', crewId)
+                    .eq('trip_code', currentTrip.trip_code);
+                if (error) throw error;
+                await loadCrew();
+            } catch (e) {
+                alert(e?.message || 'Could not delete. Please try again.');
             }
         }
 
@@ -735,8 +1231,8 @@
             showLanding();
         }
 
-        // Data storage
-        let friends = [];
+        // Data storage (crew is loaded from Supabase; expenses and activities are local)
+        let crewMembers = [];
         let expenses = [];
         let activities = [];
 
@@ -744,11 +1240,9 @@
         function loadData() {
             if (!storageKeyPrefix) return;
 
-            const savedFriends = localStorage.getItem(storageKeyPrefix + 'friends');
             const savedExpenses = localStorage.getItem(storageKeyPrefix + 'expenses');
             const savedActivities = localStorage.getItem(storageKeyPrefix + 'activities');
 
-            if (savedFriends) friends = JSON.parse(savedFriends);
             if (savedExpenses) expenses = JSON.parse(savedExpenses);
             if (savedActivities) activities = JSON.parse(savedActivities);
 
@@ -758,33 +1252,8 @@
         // Save to localStorage
         function saveData() {
             if (!storageKeyPrefix) return;
-            localStorage.setItem(storageKeyPrefix + 'friends', JSON.stringify(friends));
             localStorage.setItem(storageKeyPrefix + 'expenses', JSON.stringify(expenses));
             localStorage.setItem(storageKeyPrefix + 'activities', JSON.stringify(activities));
-        }
-
-        // Add a friend
-        function addFriend() {
-            const input = document.getElementById('friendName');
-            const name = input.value.trim();
-
-            if (name && !friends.includes(name)) {
-                friends.push(name);
-                input.value = '';
-                saveData();
-                renderAll();
-            }
-        }
-
-        // Remove a friend
-        function removeFriend(name) {
-            friends = friends.filter(f => f !== name);
-            expenses = expenses.filter(e => e.payer !== name);
-            expenses.forEach(e => {
-                e.splitBetween = e.splitBetween.filter(p => p !== name);
-            });
-            saveData();
-            renderAll();
         }
 
         // Add an activity
@@ -848,10 +1317,10 @@
             renderBalances();
         }
 
-        // Calculate balances
+        // Calculate balances (using crew member names)
         function calculateBalances() {
             const balances = {};
-            friends.forEach(f => balances[f] = 0);
+            crewMembers.forEach(c => balances[c.name] = 0);
 
             expenses.forEach(expense => {
                 const perPerson = expense.amount / expense.splitBetween.length;
@@ -913,36 +1382,6 @@
         }
 
         // Render functions
-        function renderFriends() {
-            const list = document.getElementById('friendList');
-            const payer = document.getElementById('expensePayer');
-            const splitGroup = document.getElementById('splitBetween');
-
-            if (friends.length === 0) {
-                list.innerHTML = '<li class="empty-state">Add friends to get started</li>';
-                payer.innerHTML = '<option value="">Who paid?</option>';
-                splitGroup.innerHTML = '';
-                return;
-            }
-
-            list.innerHTML = friends.map(f => `
-                <li>
-                    <span class="name">${f}</span>
-                    <button class="btn-danger" onclick="removeFriend('${f}')">Remove</button>
-                </li>
-            `).join('');
-
-            payer.innerHTML = '<option value="">Who paid?</option>' +
-                friends.map(f => `<option value="${f}">${f}</option>`).join('');
-
-            splitGroup.innerHTML = friends.map(f => `
-                <label>
-                    <input type="checkbox" value="${f}">
-                    ${f}
-                </label>
-            `).join('');
-        }
-
         function renderExpenses() {
             const list = document.getElementById('expenseList');
 
@@ -1010,8 +1449,8 @@
             const total = expenses.reduce((sum, e) => sum + e.amount, 0);
             totalSpent.textContent = '$' + total.toFixed(2);
 
-            if (friends.length === 0 || expenses.length === 0) {
-                grid.innerHTML = '<div class="empty-state">Add friends and expenses to see balances</div>';
+            if (crewMembers.length === 0 || expenses.length === 0) {
+                grid.innerHTML = '<div class="empty-state">Add crew and expenses to see balances</div>';
                 settlementsDiv.style.display = 'none';
                 return;
             }
@@ -1059,21 +1498,14 @@
         }
 
         function renderAll() {
-            renderFriends();
             renderExpenses();
             renderActivities();
             renderBalances();
+            updateExpensePersonOptions();
         }
 
         // Event listeners
         function initUI() {
-            const friendInput = document.getElementById('friendName');
-            if (friendInput) {
-                friendInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') addFriend();
-                });
-            }
-
             const createBtn = document.getElementById('createTripBtn');
             const joinBtn = document.getElementById('joinTripBtn');
             const joinCode = document.getElementById('joinTripCode');
@@ -1091,6 +1523,14 @@
                 createName.addEventListener('input', () => setLandingError(''));
                 createName.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') handleCreateTrip();
+                });
+            }
+
+            const crewForm = document.getElementById('crewForm');
+            if (crewForm) {
+                crewForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    saveCrewAndEnterTrip();
                 });
             }
         }
