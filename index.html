@@ -389,6 +389,15 @@
             font-size: 1.05rem;
         }
 
+        .landing-resume-wrap {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .landing-resume-wrap .btn-primary {
+            min-width: 280px;
+        }
+
         .landing-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -495,6 +504,10 @@
             <div class="landing-title">
                 <h1>Vegas Trip Planner</h1>
                 <p>Create a trip or join with a code to get started.</p>
+            </div>
+
+            <div id="landingResumeWrap" class="landing-resume-wrap" style="display: none;">
+                <button type="button" id="resumeTripBtn" class="btn-primary">Resume Trip: <span id="resumeTripName">—</span></button>
             </div>
 
             <div class="landing-grid">
@@ -747,6 +760,18 @@
             document.getElementById('joinPreviewRoot').style.display = 'none';
             document.getElementById('crewFormRoot').style.display = 'none';
             pendingJoinTrip = null;
+
+            const persisted = readPersistedTrip();
+            const wrap = document.getElementById('landingResumeWrap');
+            if (wrap) {
+                if (persisted && persisted.trip_name) {
+                    wrap.style.display = 'block';
+                    const nameEl = document.getElementById('resumeTripName');
+                    if (nameEl) nameEl.textContent = persisted.trip_name;
+                } else {
+                    wrap.style.display = 'none';
+                }
+            }
         }
 
         async function showJoinPreview(tripRow) {
@@ -893,18 +918,18 @@
             showApp();
         }
 
-        async function resumeTripIfPossible() {
+        async function resumeTripFromPersisted() {
             const persisted = readPersistedTrip();
-            if (!persisted) return false;
+            if (!persisted) return;
 
             try {
                 const tripRow = await fetchTripByCode(persisted.trip_code);
                 if (!tripRow) {
                     clearPersistedTrip();
-                    return false;
+                    showLanding();
+                    return;
                 }
                 await enterTrip(tripRow);
-                return true;
             } catch {
                 // If Supabase is unreachable, fall back to the persisted info so the app can still be used.
                 currentTrip = persisted;
@@ -914,7 +939,19 @@
                 activities = [];
                 loadData();
                 showApp();
-                return true;
+            }
+        }
+
+        async function handleResumeTrip() {
+            const btn = document.getElementById('resumeTripBtn');
+            setLandingError('');
+            setBusy(btn, true, 'Resuming...');
+            try {
+                await resumeTripFromPersisted();
+            } catch (e) {
+                setLandingError(e?.message || 'Could not resume trip.');
+            } finally {
+                setBusy(btn, false);
             }
         }
 
@@ -1510,9 +1547,11 @@
             const joinBtn = document.getElementById('joinTripBtn');
             const joinCode = document.getElementById('joinTripCode');
             const createName = document.getElementById('createTripName');
+            const resumeBtn = document.getElementById('resumeTripBtn');
 
             if (createBtn) createBtn.addEventListener('click', handleCreateTrip);
             if (joinBtn) joinBtn.addEventListener('click', handleJoinTrip);
+            if (resumeBtn) resumeBtn.addEventListener('click', handleResumeTrip);
             if (joinCode) {
                 joinCode.addEventListener('input', () => setLandingError(''));
                 joinCode.addEventListener('keypress', (e) => {
@@ -1537,8 +1576,7 @@
 
         async function init() {
             initUI();
-            const resumed = await resumeTripIfPossible();
-            if (!resumed) showLanding();
+            showLanding();
         }
 
         init();
