@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vegas Trip Planner</title>
+    <title>OpnTabb Planner</title>
     <style>
         * {
             margin: 0;
@@ -502,7 +502,7 @@
     <div id="landingRoot" class="screen">
         <div class="landing-wrap">
             <div class="landing-title">
-                <h1>Vegas Trip Planner</h1>
+                <h1>OpnTabb Planner</h1>
                 <p>Create a trip or join with a code to get started.</p>
             </div>
 
@@ -580,7 +580,7 @@
     <div id="appRoot" style="display: none;">
         <div class="container">
             <header>
-                <h1>Vegas Trip Planner</h1>
+                <h1>OpnTabb Planner</h1>
                 <p>Plan your trip and split expenses fairly</p>
                 <div class="trip-meta">
                     <span class="pill">Trip: <strong id="tripNameDisplay">—</strong></span>
@@ -910,12 +910,13 @@
         async function enterTrip(tripRow) {
             persistCurrentTrip(tripRow);
 
-            // Reset in-memory state for the selected trip; load expenses from Supabase, activities from localStorage.
+            // Reset in-memory state for the selected trip; load expenses and activities from Supabase.
             crewMembers = [];
             expenses = [];
             activities = [];
             await loadExpenses();
-            loadData();
+            await loadActivities();
+            renderAll();
             showApp();
         }
 
@@ -938,7 +939,7 @@
                 crewMembers = [];
                 expenses = [];
                 activities = [];
-                loadData();
+                renderAll();
                 showApp();
             }
         }
@@ -1055,6 +1056,28 @@
             } catch (e) {
                 console.error('Failed to load expenses:', e);
                 expenses = [];
+            }
+        }
+
+        async function loadActivities() {
+            if (!currentTrip?.trip_code) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('activities')
+                    .select('id, name, date, time, notes')
+                    .eq('trip_code', currentTrip.trip_code)
+                    .order('date', { ascending: true });
+                if (error) throw error;
+                activities = (data || []).map(row => ({
+                    id: row.id,
+                    name: row.name || '',
+                    date: row.date || '',
+                    time: row.time || '',
+                    notes: row.notes || ''
+                }));
+            } catch (e) {
+                console.error('Failed to load activities:', e);
+                activities = [];
             }
         }
 
@@ -1291,50 +1314,67 @@
             showLanding();
         }
 
-        // Data storage (crew and expenses from Supabase; activities are local)
+        // Data storage (crew, expenses, and activities from Supabase)
         let crewMembers = [];
         let expenses = [];
         let activities = [];
 
-        // Load from localStorage (activities only; expenses are loaded from Supabase in loadExpenses)
-        function loadData() {
-            if (!storageKeyPrefix) return;
-
-            const savedActivities = localStorage.getItem(storageKeyPrefix + 'activities');
-            if (savedActivities) activities = JSON.parse(savedActivities);
-
-            renderAll();
-        }
-
-        // Save to localStorage (activities only)
-        function saveData() {
-            if (!storageKeyPrefix) return;
-            localStorage.setItem(storageKeyPrefix + 'activities', JSON.stringify(activities));
-        }
-
         // Add an activity
-        function addActivity() {
+        async function addActivity() {
             const name = document.getElementById('activityName').value.trim();
             const date = document.getElementById('activityDate').value;
             const time = document.getElementById('activityTime').value;
             const notes = document.getElementById('activityNotes').value.trim();
 
-            if (name) {
-                activities.push({ id: Date.now(), name, date, time, notes });
+            if (!name) return;
+            if (!currentTrip?.trip_code) return;
+
+            const payload = {
+                trip_code: currentTrip.trip_code,
+                name,
+                date: date || null,
+                time: time || null,
+                notes: notes || null
+            };
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('activities')
+                    .insert(payload)
+                    .select('id, name, date, time, notes')
+                    .single();
+                if (error) throw error;
+                activities.push({
+                    id: data.id,
+                    name: data.name || name,
+                    date: data.date || '',
+                    time: data.time || '',
+                    notes: data.notes || ''
+                });
                 document.getElementById('activityName').value = '';
                 document.getElementById('activityDate').value = '';
                 document.getElementById('activityTime').value = '';
                 document.getElementById('activityNotes').value = '';
-                saveData();
                 renderActivities();
+            } catch (e) {
+                alert(e?.message || 'Could not add activity. Please try again.');
             }
         }
 
         // Remove an activity
-        function removeActivity(id) {
-            activities = activities.filter(a => a.id !== id);
-            saveData();
-            renderActivities();
+        async function removeActivity(id) {
+            if (!id) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('activities')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+                activities = activities.filter(a => a.id !== id);
+                renderActivities();
+            } catch (e) {
+                alert(e?.message || 'Could not delete activity. Please try again.');
+            }
         }
 
         // Add an expense
@@ -1512,11 +1552,11 @@
                 return `
                     <li>
                         <div class="activity-item">
-                            <span class="activity-name">${a.name}</span>
-                            ${dateStr || timeStr ? `<span class="activity-date">${dateStr} ${timeStr}</span>` : ''}
-                            ${a.notes ? `<span class="activity-notes">${a.notes}</span>` : ''}
+                            <span class="activity-name">${escapeHtml(a.name)}</span>
+                            ${dateStr || timeStr ? `<span class="activity-date">${escapeHtml(dateStr + ' ' + timeStr)}</span>` : ''}
+                            ${a.notes ? `<span class="activity-notes">${escapeHtml(a.notes)}</span>` : ''}
                         </div>
-                        <button class="btn-danger" onclick="removeActivity(${a.id})">Remove</button>
+                        <button class="btn-danger" onclick="removeActivity(${JSON.stringify(a.id)})">Remove</button>
                     </li>
                 `;
             }).join('');
