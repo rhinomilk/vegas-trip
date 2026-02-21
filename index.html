@@ -192,6 +192,13 @@
             grid-column: 1 / -1;
         }
 
+        .app-footer {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
         .balance-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -652,6 +659,10 @@
                     </div>
                 </div>
             </div>
+
+            <footer class="app-footer">
+                <button type="button" class="btn-danger" onclick="deleteTrip()">Delete Trip</button>
+            </footer>
 
             <!-- Add/Edit Crew Member Modal -->
             <div id="crewMemberModal" class="modal" style="display: none;">
@@ -1312,6 +1323,25 @@
         function switchTrip() {
             clearPersistedTrip();
             showLanding();
+        }
+
+        async function deleteTrip() {
+            if (!currentTrip?.trip_code) return;
+            const message = 'This will permanently delete this trip and all associated crew, expenses, and activities. This cannot be undone. Are you sure?';
+            if (!confirm(message)) return;
+
+            const tripCode = currentTrip.trip_code;
+            try {
+                await supabaseClient.from('crew').delete().eq('trip_code', tripCode);
+                await supabaseClient.from('expenses').delete().eq('trip_code', tripCode);
+                await supabaseClient.from('activities').delete().eq('trip_code', tripCode);
+                const { error } = await supabaseClient.from('trips').delete().eq('trip_code', tripCode);
+                if (error) throw error;
+                clearPersistedTrip();
+                showLanding();
+            } catch (e) {
+                alert(e?.message || 'Could not delete trip. Please try again.');
+            }
         }
 
         // Data storage (crew, expenses, and activities from Supabase)
