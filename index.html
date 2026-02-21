@@ -910,10 +910,11 @@
         async function enterTrip(tripRow) {
             persistCurrentTrip(tripRow);
 
-            // Reset in-memory state for the selected trip, then load namespaced storage.
+            // Reset in-memory state for the selected trip; load expenses from Supabase, activities from localStorage.
             crewMembers = [];
             expenses = [];
             activities = [];
+            await loadExpenses();
             loadData();
             showApp();
         }
@@ -1032,6 +1033,28 @@
                 setCrewFormError(e?.message || 'Could not save. Please try again.');
             } finally {
                 setBusy(btn, false);
+            }
+        }
+
+        async function loadExpenses() {
+            if (!currentTrip?.trip_code) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('expenses')
+                    .select('id, description, amount, paid_by, split_between, date')
+                    .eq('trip_code', currentTrip.trip_code)
+                    .order('date', { ascending: true });
+                if (error) throw error;
+                expenses = (data || []).map(row => ({
+                    id: row.id,
+                    desc: row.description || '',
+                    amount: Number(row.amount),
+                    payer: row.paid_by || '',
+                    splitBetween: typeof row.split_between === 'string' ? JSON.parse(row.split_between || '[]') : (row.split_between || [])
+                }));
+            } catch (e) {
+                console.error('Failed to load expenses:', e);
+                expenses = [];
             }
         }
 
@@ -1268,28 +1291,24 @@
             showLanding();
         }
 
-        // Data storage (crew is loaded from Supabase; expenses and activities are local)
+        // Data storage (crew and expenses from Supabase; activities are local)
         let crewMembers = [];
         let expenses = [];
         let activities = [];
 
-        // Load from localStorage
+        // Load from localStorage (activities only; expenses are loaded from Supabase in loadExpenses)
         function loadData() {
             if (!storageKeyPrefix) return;
 
-            const savedExpenses = localStorage.getItem(storageKeyPrefix + 'expenses');
             const savedActivities = localStorage.getItem(storageKeyPrefix + 'activities');
-
-            if (savedExpenses) expenses = JSON.parse(savedExpenses);
             if (savedActivities) activities = JSON.parse(savedActivities);
 
             renderAll();
         }
 
-        // Save to localStorage
+        // Save to localStorage (activities only)
         function saveData() {
             if (!storageKeyPrefix) return;
-            localStorage.setItem(storageKeyPrefix + 'expenses', JSON.stringify(expenses));
             localStorage.setItem(storageKeyPrefix + 'activities', JSON.stringify(activities));
         }
 
@@ -1319,39 +1338,65 @@
         }
 
         // Add an expense
-        function addExpense() {
+        async function addExpense() {
             const desc = document.getElementById('expenseDesc').value.trim();
             const amount = parseFloat(document.getElementById('expenseAmount').value);
             const payer = document.getElementById('expensePayer').value;
             const splitBetween = [...document.querySelectorAll('#splitBetween input:checked')]
                 .map(cb => cb.value);
 
-            if (desc && amount > 0 && payer && splitBetween.length > 0) {
-                expenses.push({
-                    id: Date.now(),
-                    desc,
-                    amount,
-                    payer,
-                    splitBetween
-                });
+            if (!desc || amount <= 0 || !payer || splitBetween.length === 0) return;
+            if (!currentTrip?.trip_code) return;
 
+            const payload = {
+                trip_code: currentTrip.trip_code,
+                description: desc,
+                amount,
+                paid_by: payer,
+                split_between: JSON.stringify(splitBetween),
+                date: new Date().toISOString().slice(0, 10)
+            };
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('expenses')
+                    .insert(payload)
+                    .select('id, description, amount, paid_by, split_between, date')
+                    .single();
+                if (error) throw error;
+                expenses.push({
+                    id: data.id,
+                    desc: data.description || desc,
+                    amount: Number(data.amount),
+                    payer: data.paid_by || payer,
+                    splitBetween: typeof data.split_between === 'string' ? JSON.parse(data.split_between || '[]') : (data.split_between || [])
+                });
                 document.getElementById('expenseDesc').value = '';
                 document.getElementById('expenseAmount').value = '';
                 document.getElementById('expensePayer').value = '';
                 document.querySelectorAll('#splitBetween input').forEach(cb => cb.checked = false);
-
-                saveData();
                 renderExpenses();
                 renderBalances();
+            } catch (e) {
+                alert(e?.message || 'Could not add expense. Please try again.');
             }
         }
 
         // Remove an expense
-        function removeExpense(id) {
-            expenses = expenses.filter(e => e.id !== id);
-            saveData();
-            renderExpenses();
-            renderBalances();
+        async function removeExpense(id) {
+            if (!id) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('expenses')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+                expenses = expenses.filter(e => e.id !== id);
+                renderExpenses();
+                renderBalances();
+            } catch (e) {
+                alert(e?.message || 'Could not delete expense. Please try again.');
+            }
         }
 
         // Calculate balances (using crew member names)
@@ -1431,11 +1476,11 @@
                 <li>
                     <div class="expense-header">
                         <span class="expense-amount">$${e.amount.toFixed(2)}</span>
-                        <button class="btn-danger" onclick="removeExpense(${e.id})">Remove</button>
+                        <button class="btn-danger" onclick="removeExpense(${JSON.stringify(e.id)})">Remove</button>
                     </div>
-                    <strong>${e.desc}</strong>
+                    <strong>${escapeHtml(e.desc)}</strong>
                     <div class="expense-details">
-                        Paid by <strong>${e.payer}</strong> · Split between ${e.splitBetween.join(', ')}
+                        Paid by <strong>${escapeHtml(e.payer)}</strong> · Split between ${e.splitBetween.map(s => escapeHtml(s)).join(', ')}
                     </div>
                 </li>
             `).join('');
