@@ -219,7 +219,7 @@
         }
 
         /* Bottom mobile nav */
-        @media (min-width: 769px) { .bottom-nav { display: none; } }
+        
 
 .bottom-nav {
             position: fixed;
@@ -588,7 +588,12 @@
             padding: 6px 12px;
             font-size: 0.85rem;
         }
-    </style>
+    @media (min-width: 769px) {
+  .bottom-nav {
+    display: none !important;
+  }
+}
+</style>
 </head>
 <body>
     <!-- Landing screen (Create/Join Trip) -->
