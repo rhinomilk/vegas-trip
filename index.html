@@ -4,7 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpnTabb Planner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #0f0f0f;
+            --bg-card: #1a1a1a;
+            --input-bg: #252525;
+            --text: #ffffff;
+            --text-muted: #888;
+            --border: #333;
+            --accent: #00e676;
+            --accent-hover: #00c853;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,10 +24,11 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
             min-height: 100vh;
-            color: #fff;
+            color: var(--text);
+            font-weight: 500;
         }
 
         .container {
@@ -31,15 +44,14 @@
 
         header h1 {
             font-size: 3rem;
-            background: linear-gradient(90deg, #f9d423, #ff4e50);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-weight: 700;
+            color: var(--text);
             margin-bottom: 10px;
+            letter-spacing: -0.02em;
         }
 
         header p {
-            color: #aaa;
+            color: var(--text-muted);
             font-size: 1.1rem;
         }
 
@@ -51,75 +63,89 @@
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
             padding: 24px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .card h2 {
-            font-size: 1.4rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
             margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card h2 span {
-            font-size: 1.5rem;
+            color: var(--text);
         }
 
         input, select, textarea {
             width: 100%;
-            padding: 12px 16px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--input-bg);
+            color: var(--text);
             font-size: 1rem;
+            font-family: inherit;
             margin-bottom: 12px;
         }
 
         input::placeholder, textarea::placeholder {
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--text-muted);
         }
 
         input:focus, select:focus, textarea:focus {
             outline: none;
-            border-color: #f9d423;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0, 230, 118, 0.2);
         }
 
         button {
             padding: 12px 24px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 1rem;
+            font-family: inherit;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: background 0.2s, transform 0.15s;
         }
 
         button:hover {
-            transform: translateY(-2px);
+            transform: translateY(-1px);
         }
 
         .btn-primary {
-            background: linear-gradient(90deg, #f9d423, #ff4e50);
-            color: #1a1a2e;
-            font-weight: 600;
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: var(--input-bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
         }
 
         .btn-danger {
-            background: #e74c3c;
-            color: #fff;
+            background: transparent;
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 107, 107, 0.5);
             padding: 6px 12px;
             font-size: 0.85rem;
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 107, 107, 0.15);
+            border-color: #ff6b6b;
         }
 
         .friend-list, .expense-list, .activity-list {
@@ -131,14 +157,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
+            padding: 14px 16px;
+            background: var(--input-bg);
+            border-radius: 10px;
             margin-bottom: 8px;
         }
 
         .friend-list li .name {
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .crew-list {
@@ -147,20 +173,20 @@
         }
 
         .crew-list li {
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
+            padding: 16px;
+            background: var(--input-bg);
+            border-radius: 10px;
             margin-bottom: 8px;
         }
 
         .crew-list li .crew-name {
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 4px;
         }
 
         .crew-list li .crew-detail {
             font-size: 0.9rem;
-            color: #aaa;
+            color: var(--text-muted);
             margin-top: 4px;
         }
 
@@ -179,13 +205,13 @@
 
         .expense-details {
             font-size: 0.9rem;
-            color: #aaa;
+            color: var(--text-muted);
         }
 
         .expense-amount {
             font-size: 1.2rem;
-            font-weight: 600;
-            color: #2ecc71;
+            font-weight: 700;
+            color: var(--accent);
         }
 
         .balance-card {
@@ -193,14 +219,16 @@
         }
 
         /* Bottom mobile nav */
-        .bottom-nav {
+        @media (min-width: 769px) { .bottom-nav { display: none; } }
+
+.bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
             height: 64px;
-            background: rgba(10, 12, 28, 0.96);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
             display: flex;
             justify-content: space-around;
             align-items: center;
@@ -211,30 +239,33 @@
         .bottom-nav button {
             flex: 1;
             background: transparent;
-            border-radius: 999px;
+            border: none;
+            border-radius: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 2px;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
             padding: 6px 4px;
         }
 
         .bottom-nav button .icon {
-            font-size: 1.2rem;
+            display: none;
         }
 
         .bottom-nav button.active {
-            background: rgba(249, 212, 35, 0.12);
-            color: #f9d423;
+            color: var(--accent);
         }
 
         .app-footer {
             margin-top: 2rem;
             padding-top: 1.5rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid var(--border);
             text-align: center;
         }
 
@@ -246,15 +277,16 @@
         }
 
         .balance-item {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--input-bg);
+            border: 1px solid var(--border);
             padding: 16px;
-            border-radius: 8px;
+            border-radius: 10px;
             text-align: center;
         }
 
         .balance-item .person {
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 8px;
         }
 
@@ -264,26 +296,30 @@
         }
 
         .balance-item .amount.positive {
-            color: #2ecc71;
+            color: var(--accent);
         }
 
         .balance-item .amount.negative {
-            color: #e74c3c;
+            color: #ff6b6b;
         }
 
         .balance-item .amount.zero {
-            color: #f9d423;
+            color: var(--text-muted);
         }
 
         .settlements {
             margin-top: 24px;
             padding-top: 24px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid var(--border);
         }
 
         .settlements h3 {
             margin-bottom: 16px;
-            color: #f9d423;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text);
         }
 
         .settlement-item {
@@ -291,14 +327,13 @@
             align-items: center;
             gap: 12px;
             padding: 12px 16px;
-            background: rgba(46, 204, 113, 0.1);
-            border-radius: 8px;
+            background: rgba(0, 230, 118, 0.08);
+            border-radius: 10px;
             margin-bottom: 8px;
-            border-left: 4px solid #2ecc71;
         }
 
         .settlement-item .arrow {
-            color: #2ecc71;
+            color: var(--accent);
             font-weight: bold;
         }
 
@@ -313,15 +348,16 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
+            padding: 10px 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: border-color 0.2s, background 0.2s;
         }
 
         .checkbox-group label:hover {
-            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--accent);
         }
 
         .checkbox-group input[type="checkbox"] {
@@ -336,24 +372,24 @@
         }
 
         .activity-item .activity-name {
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .activity-item .activity-date {
             font-size: 0.85rem;
-            color: #aaa;
+            color: var(--text-muted);
         }
 
         .activity-item .activity-notes {
             font-size: 0.9rem;
-            color: #ccc;
+            color: var(--text-muted);
             font-style: italic;
         }
 
         .empty-state {
             text-align: center;
             padding: 24px;
-            color: #666;
+            color: var(--text-muted);
         }
 
         .input-row {
@@ -367,30 +403,29 @@
 
         .total-spent {
             text-align: center;
-            padding: 20px;
-            background: linear-gradient(90deg, rgba(249, 212, 35, 0.1), rgba(255, 78, 80, 0.1));
+            padding: 24px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
             border-radius: 12px;
             margin-bottom: 20px;
         }
 
         .total-spent .label {
             font-size: 0.9rem;
-            color: #aaa;
+            color: var(--text-muted);
             margin-bottom: 4px;
         }
 
         .total-spent .value {
             font-size: 2.5rem;
             font-weight: 700;
-            background: linear-gradient(90deg, #f9d423, #ff4e50);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--accent);
         }
 
         .field-label {
             font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.7);
+            font-weight: 600;
+            color: var(--text-muted);
             margin: 4px 0;
         }
 
@@ -412,7 +447,7 @@
             }
 
             body {
-                padding-bottom: 80px; /* room for bottom nav */
+                padding-bottom: 80px;
             }
         }
 
@@ -437,15 +472,14 @@
 
         .landing-title h1 {
             font-size: 3rem;
-            background: linear-gradient(90deg, #f9d423, #ff4e50);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-weight: 700;
+            color: var(--text);
             margin-bottom: 10px;
+            letter-spacing: -0.02em;
         }
 
         .landing-title p {
-            color: #aaa;
+            color: var(--text-muted);
             font-size: 1.05rem;
         }
 
@@ -465,17 +499,17 @@
         }
 
         .muted {
-            color: #aaa;
+            color: var(--text-muted);
             font-size: 0.95rem;
         }
 
         .error {
             margin-top: 10px;
-            background: rgba(231, 76, 60, 0.12);
-            border: 1px solid rgba(231, 76, 60, 0.35);
-            color: #ffd7d3;
+            background: rgba(255, 107, 107, 0.15);
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
             padding: 10px 12px;
-            border-radius: 8px;
+            border-radius: 10px;
             display: none;
         }
 
@@ -491,11 +525,11 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 12px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            color: #fff;
+            padding: 8px 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
             font-size: 0.95rem;
         }
 
@@ -523,8 +557,7 @@
         .modal-backdrop {
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.85);
         }
 
         .modal-content {
@@ -572,7 +605,7 @@
 
             <div class="landing-grid">
                 <div class="card">
-                    <h2><span>✨</span> Create Trip</h2>
+                    <h2>Create Trip</h2>
                     <input id="createTripName" type="text" placeholder="Trip name (e.g., Vegas 2026)">
                     <button id="createTripBtn" class="btn-primary" style="width: 100%;">Create Trip</button>
                     <div class="muted" style="margin-top: 10px;">
@@ -581,7 +614,7 @@
                 </div>
 
                 <div class="card">
-                    <h2><span>🔑</span> Join Trip</h2>
+                    <h2>Join Trip</h2>
                     <input id="joinTripCode" type="text" placeholder="Enter code (e.g., A1B2C3)" maxlength="12" autocapitalize="characters" spellcheck="false">
                     <button id="joinTripBtn" class="btn-secondary" style="width: 100%;">Join Trip</button>
                     <div class="muted" style="margin-top: 10px;">
@@ -658,7 +691,7 @@
             <div class="grid">
                 <!-- Crew Section -->
                 <div class="card" id="crewSection">
-                    <h2><span>✈️</span> Crew</h2>
+                    <h2>Crew</h2>
                     <p class="muted" style="margin-bottom: 12px; font-size: 0.9rem;">Trip members and their flight details. Expense splitting uses crew members.</p>
                     <button type="button" class="btn-secondary" style="margin-bottom: 16px;" onclick="openCrewMemberModal()">Add Crew Member</button>
                     <ul class="crew-list" id="crewList">
@@ -668,7 +701,7 @@
 
                 <!-- Activities Section -->
                 <div class="card" id="activitiesSection">
-                    <h2><span>🎰</span> Activities</h2>
+                    <h2>Activities</h2>
                     <input type="text" id="activityName" placeholder="Activity name (e.g., Cirque du Soleil)">
                     <div class="input-row">
                         <input type="date" id="activityDate">
@@ -683,20 +716,20 @@
 
                 <!-- Expenses Section -->
                 <div class="card" id="expensesSection">
-                    <h2><span>💰</span> Add Expense</h2>
+                    <h2>Add Expense</h2>
                     <input type="text" id="expenseDesc" placeholder="What was it for? (e.g., Hotel, Show tickets)">
                     <input type="number" id="expenseAmount" placeholder="Amount ($)" step="0.01">
                     <select id="expensePayer">
                         <option value="">Who paid?</option>
                     </select>
-                    <p style="margin-bottom: 8px; color: #aaa; font-size: 0.9rem;">Split between:</p>
+                    <p class="muted" style="margin-bottom: 8px; font-size: 0.9rem;">Split between:</p>
                     <div class="checkbox-group" id="splitBetween"></div>
                     <button class="btn-primary" onclick="addExpense()">Add Expense</button>
                 </div>
 
                 <!-- Expense List -->
                 <div class="card">
-                    <h2><span>📋</span> Expenses</h2>
+                    <h2>Expenses</h2>
                     <ul class="expense-list" id="expenseList">
                         <li class="empty-state">No expenses recorded yet</li>
                     </ul>
@@ -704,7 +737,7 @@
 
                 <!-- Balance Section -->
                 <div class="card balance-card" id="balancesSection">
-                    <h2><span>⚖️</span> Balances</h2>
+                    <h2>Balances</h2>
                     <div class="total-spent">
                         <div class="label">Total Trip Cost</div>
                         <div class="value" id="totalSpent">$0.00</div>
@@ -727,7 +760,7 @@
             <div id="crewMemberModal" class="modal" style="display: none;">
                 <div class="modal-backdrop" onclick="closeCrewMemberModal()"></div>
                 <div class="modal-content card">
-                    <h2><span>✈️</span> <span id="crewModalTitle">Add Crew Member</span></h2>
+                    <h2><span id="crewModalTitle">Add Crew Member</span></h2>
                     <form id="crewMemberForm" onsubmit="saveCrewMember(); return false;">
                         <input type="hidden" id="crewMemberId" value="">
                         <input id="modalCrewName" type="text" placeholder="Name" required>
@@ -754,19 +787,19 @@
         <!-- Bottom navigation (main app) -->
         <nav class="bottom-nav" id="bottomNav" style="display: none;">
             <button type="button" data-target="crewSection" class="active">
-                <span class="icon">👥</span>
+                <span class="icon"></span>
                 <span>Crew</span>
             </button>
             <button type="button" data-target="activitiesSection">
-                <span class="icon">🎟️</span>
+                <span class="icon"></span>
                 <span>Activities</span>
             </button>
             <button type="button" data-target="expensesSection">
-                <span class="icon">💰</span>
+                <span class="icon"></span>
                 <span>Expenses</span>
             </button>
             <button type="button" data-target="balancesSection">
-                <span class="icon">⚖️</span>
+                <span class="icon"></span>
                 <span>Balances</span>
             </button>
         </nav>
@@ -1730,7 +1763,7 @@
                         <strong>${s.from}</strong>
                         <span class="arrow">→</span>
                         <strong>${s.to}</strong>
-                        <span style="margin-left: auto; color: #2ecc71; font-weight: 600;">$${s.amount.toFixed(2)}</span>
+                        <span style="margin-left: auto; color: #00e676; font-weight: 600;">$${s.amount.toFixed(2)}</span>
                     </div>
                 `).join('');
             } else {
