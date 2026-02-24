@@ -593,6 +593,88 @@
     display: none !important;
   }
 }
+
+        /* Category badges */
+        .category-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .cat-dining { background: rgba(255, 80, 80, 0.2); color: #ff5050; }
+        .cat-entertainment { background: rgba(80, 120, 255, 0.2); color: #5078ff; }
+        .cat-experience { background: rgba(60, 200, 100, 0.2); color: #3cc864; }
+        .cat-other { background: rgba(255, 190, 30, 0.2); color: #ffbe1e; }
+        .cat-transportation { background: rgba(255, 140, 0, 0.2); color: #ff8c00; }
+        .cat-accommodation { background: rgba(160, 80, 255, 0.2); color: #a050ff; }
+        .cat-shopping { background: rgba(255, 80, 160, 0.2); color: #ff50a0; }
+
+        /* Itinerary */
+        .itinerary-card { grid-column: 1 / -1; }
+        .itinerary-day { margin-bottom: 28px; }
+        .itinerary-date-header {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+        .itinerary-events { display: flex; flex-direction: column; gap: 8px; }
+        .itinerary-event {
+            display: flex;
+            gap: 14px;
+            padding: 12px 14px;
+            background: var(--input-bg);
+            border-radius: 10px;
+            border-left: 3px solid var(--accent);
+        }
+        .itinerary-time {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            min-width: 62px;
+            padding-top: 2px;
+            flex-shrink: 0;
+        }
+        .itinerary-event-name { font-weight: 600; margin-bottom: 4px; }
+        .itinerary-location { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+        .itinerary-notes { font-size: 0.82rem; color: var(--text-muted); font-style: italic; margin-top: 3px; }
+
+        /* Map */
+        #activitiesMap {
+            width: 100%;
+            height: 300px;
+            border-radius: 10px;
+            margin-top: 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            display: none;
+        }
+        .map-legend {
+            display: none;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .map-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+        .map-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
 </style>
 </head>
 <body>
@@ -712,11 +794,34 @@
                         <input type="date" id="activityDate">
                         <input type="time" id="activityTime">
                     </div>
+                    <select id="activityCategory">
+                        <option value="">Category (optional)</option>
+                        <option value="Dining">Dining</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Experience">Experience</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <input type="text" id="activityLocation" placeholder="Location / address (optional)">
                     <textarea id="activityNotes" placeholder="Notes (optional)" rows="2"></textarea>
                     <button class="btn-primary" onclick="addActivity()">Add Activity</button>
                     <ul class="activity-list" id="activityList">
                         <li class="empty-state">No activities planned yet</li>
                     </ul>
+                    <div id="activitiesMap"></div>
+                    <div class="map-legend" id="mapLegend">
+                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#c0392b;"></div> Dining</div>
+                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#2980b9;"></div> Entertainment</div>
+                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#27ae60;"></div> Experience</div>
+                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#f39c12;"></div> Other</div>
+                    </div>
+                </div>
+
+                <!-- Itinerary Section -->
+                <div class="card itinerary-card" id="itinerarySection">
+                    <h2>Itinerary</h2>
+                    <div id="itineraryContent">
+                        <div class="empty-state">No activities with dates yet</div>
+                    </div>
                 </div>
 
                 <!-- Expenses Section -->
@@ -724,6 +829,15 @@
                     <h2>Add Expense</h2>
                     <input type="text" id="expenseDesc" placeholder="What was it for? (e.g., Hotel, Show tickets)">
                     <input type="number" id="expenseAmount" placeholder="Amount ($)" step="0.01">
+                    <select id="expenseCategory">
+                        <option value="">Category (optional)</option>
+                        <option value="Dining">Dining</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Accommodation">Accommodation</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Other">Other</option>
+                    </select>
                     <select id="expensePayer">
                         <option value="">Who paid?</option>
                     </select>
@@ -799,6 +913,10 @@
                 <span class="icon"></span>
                 <span>Activities</span>
             </button>
+            <button type="button" data-target="itinerarySection">
+                <span class="icon"></span>
+                <span>Itinerary</span>
+            </button>
             <button type="button" data-target="expensesSection">
                 <span class="icon"></span>
                 <span>Expenses</span>
@@ -811,6 +929,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCfzTQe1VjbTeaDUEnOicNHCcBWtTaQLmo&callback=initGoogleMap"></script>
     <script>
         // -----------------------------
         // Supabase + Trip gating
@@ -1178,7 +1297,7 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('expenses')
-                    .select('id, description, amount, paid_by, split_between, date')
+                    .select('id, description, amount, paid_by, split_between, date, category')
                     .eq('trip_code', currentTrip.trip_code)
                     .order('date', { ascending: true });
                 if (error) throw error;
@@ -1187,7 +1306,8 @@
                     desc: row.description || '',
                     amount: Number(row.amount),
                     payer: row.paid_by || '',
-                    splitBetween: typeof row.split_between === 'string' ? JSON.parse(row.split_between || '[]') : (row.split_between || [])
+                    splitBetween: typeof row.split_between === 'string' ? JSON.parse(row.split_between || '[]') : (row.split_between || []),
+                    category: row.category || ''
                 }));
             } catch (e) {
                 console.error('Failed to load expenses:', e);
@@ -1200,7 +1320,7 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('activities')
-                    .select('id, name, date, time, notes')
+                    .select('id, name, date, time, notes, category, location')
                     .eq('trip_code', currentTrip.trip_code)
                     .order('date', { ascending: true });
                 if (error) throw error;
@@ -1209,7 +1329,9 @@
                     name: row.name || '',
                     date: row.date || '',
                     time: row.time || '',
-                    notes: row.notes || ''
+                    notes: row.notes || '',
+                    category: row.category || '',
+                    location: row.location || ''
                 }));
             } catch (e) {
                 console.error('Failed to load activities:', e);
@@ -1481,6 +1603,8 @@
             const name = document.getElementById('activityName').value.trim();
             const date = document.getElementById('activityDate').value;
             const time = document.getElementById('activityTime').value;
+            const category = document.getElementById('activityCategory').value;
+            const location = document.getElementById('activityLocation').value.trim();
             const notes = document.getElementById('activityNotes').value.trim();
 
             if (!name) return;
@@ -1491,6 +1615,8 @@
                 name,
                 date: date || null,
                 time: time || null,
+                category: category || null,
+                location: location || null,
                 notes: notes || null
             };
 
@@ -1498,7 +1624,7 @@
                 const { data, error } = await supabaseClient
                     .from('activities')
                     .insert(payload)
-                    .select('id, name, date, time, notes')
+                    .select('id, name, date, time, notes, category, location')
                     .single();
                 if (error) throw error;
                 activities.push({
@@ -1506,13 +1632,19 @@
                     name: data.name || name,
                     date: data.date || '',
                     time: data.time || '',
-                    notes: data.notes || ''
+                    notes: data.notes || '',
+                    category: data.category || '',
+                    location: data.location || ''
                 });
                 document.getElementById('activityName').value = '';
                 document.getElementById('activityDate').value = '';
                 document.getElementById('activityTime').value = '';
+                document.getElementById('activityCategory').value = '';
+                document.getElementById('activityLocation').value = '';
                 document.getElementById('activityNotes').value = '';
                 renderActivities();
+                renderItinerary();
+                updateMap();
             } catch (e) {
                 alert(e?.message || 'Could not add activity. Please try again.');
             }
@@ -1529,6 +1661,8 @@
                 if (error) throw error;
                 activities = activities.filter(a => a.id !== id);
                 renderActivities();
+                renderItinerary();
+                updateMap();
             } catch (e) {
                 alert(e?.message || 'Could not delete activity. Please try again.');
             }
@@ -1538,6 +1672,7 @@
         async function addExpense() {
             const desc = document.getElementById('expenseDesc').value.trim();
             const amount = parseFloat(document.getElementById('expenseAmount').value);
+            const category = document.getElementById('expenseCategory').value;
             const payer = document.getElementById('expensePayer').value;
             const splitBetween = [...document.querySelectorAll('#splitBetween input:checked')]
                 .map(cb => cb.value);
@@ -1551,14 +1686,15 @@
                 amount,
                 paid_by: payer,
                 split_between: JSON.stringify(splitBetween),
-                date: new Date().toISOString().slice(0, 10)
+                date: new Date().toISOString().slice(0, 10),
+                category: category || null
             };
 
             try {
                 const { data, error } = await supabaseClient
                     .from('expenses')
                     .insert(payload)
-                    .select('id, description, amount, paid_by, split_between, date')
+                    .select('id, description, amount, paid_by, split_between, date, category')
                     .single();
                 if (error) throw error;
                 expenses.push({
@@ -1566,10 +1702,12 @@
                     desc: data.description || desc,
                     amount: Number(data.amount),
                     payer: data.paid_by || payer,
-                    splitBetween: typeof data.split_between === 'string' ? JSON.parse(data.split_between || '[]') : (data.split_between || [])
+                    splitBetween: typeof data.split_between === 'string' ? JSON.parse(data.split_between || '[]') : (data.split_between || []),
+                    category: data.category || ''
                 });
                 document.getElementById('expenseDesc').value = '';
                 document.getElementById('expenseAmount').value = '';
+                document.getElementById('expenseCategory').value = '';
                 document.getElementById('expensePayer').value = '';
                 document.querySelectorAll('#splitBetween input').forEach(cb => cb.checked = false);
                 renderExpenses();
@@ -1669,18 +1807,23 @@
                 return;
             }
 
-            list.innerHTML = expenses.map(e => `
+            list.innerHTML = expenses.map(e => {
+                const catClass = e.category ? `cat-${e.category.toLowerCase()}` : '';
+                return `
                 <li>
                     <div class="expense-header">
                         <span class="expense-amount">$${e.amount.toFixed(2)}</span>
                         <button class="btn-danger" onclick="removeExpense(${JSON.stringify(e.id)})">Remove</button>
                     </div>
-                    <strong>${escapeHtml(e.desc)}</strong>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <strong>${escapeHtml(e.desc)}</strong>
+                        ${e.category ? `<span class="category-badge ${catClass}">${escapeHtml(e.category)}</span>` : ''}
+                    </div>
                     <div class="expense-details">
                         Paid by <strong>${escapeHtml(e.payer)}</strong> · Split between ${e.splitBetween.map(s => escapeHtml(s)).join(', ')}
                     </div>
                 </li>
-            `).join('');
+            `}).join('');
         }
 
         function renderActivities() {
@@ -1705,18 +1848,172 @@
                 const timeStr = a.time ? new Date('2000-01-01T' + a.time).toLocaleTimeString('en-US', {
                     hour: 'numeric', minute: '2-digit'
                 }) : '';
+                const catClass = a.category ? `cat-${a.category.toLowerCase()}` : '';
 
                 return `
                     <li>
                         <div class="activity-item">
-                            <span class="activity-name">${escapeHtml(a.name)}</span>
-                            ${dateStr || timeStr ? `<span class="activity-date">${escapeHtml(dateStr + ' ' + timeStr)}</span>` : ''}
+                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                <span class="activity-name">${escapeHtml(a.name)}</span>
+                                ${a.category ? `<span class="category-badge ${catClass}">${escapeHtml(a.category)}</span>` : ''}
+                            </div>
+                            ${dateStr || timeStr ? `<span class="activity-date">${escapeHtml((dateStr + ' ' + timeStr).trim())}</span>` : ''}
+                            ${a.location ? `<span class="activity-date">📍 ${escapeHtml(a.location)}</span>` : ''}
                             ${a.notes ? `<span class="activity-notes">${escapeHtml(a.notes)}</span>` : ''}
                         </div>
                         <button class="btn-danger" onclick="removeActivity(${JSON.stringify(a.id)})">Remove</button>
                     </li>
                 `;
             }).join('');
+        }
+
+        function renderItinerary() {
+            const content = document.getElementById('itineraryContent');
+            if (!content) return;
+
+            const withDate = activities.filter(a => a.date);
+            if (!withDate.length) {
+                content.innerHTML = '<div class="empty-state">No activities with dates yet</div>';
+                return;
+            }
+
+            // Group by date
+            const byDate = {};
+            withDate.forEach(a => {
+                if (!byDate[a.date]) byDate[a.date] = [];
+                byDate[a.date].push(a);
+            });
+
+            const sortedDates = Object.keys(byDate).sort();
+
+            content.innerHTML = sortedDates.map(date => {
+                const dayActivities = byDate[date].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+                const dateLabel = new Date(date + 'T12:00').toLocaleDateString('en-US', {
+                    weekday: 'long', month: 'long', day: 'numeric'
+                });
+
+                return `
+                    <div class="itinerary-day">
+                        <div class="itinerary-date-header">${escapeHtml(dateLabel)}</div>
+                        <div class="itinerary-events">
+                            ${dayActivities.map(a => {
+                                const timeStr = a.time
+                                    ? new Date('2000-01-01T' + a.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                                    : '';
+                                const catClass = a.category ? `cat-${a.category.toLowerCase()}` : 'cat-other';
+                                return `
+                                    <div class="itinerary-event">
+                                        <div class="itinerary-time">${escapeHtml(timeStr) || '—'}</div>
+                                        <div>
+                                            <div class="itinerary-event-name">${escapeHtml(a.name)}${a.category ? ` <span class="category-badge ${catClass}">${escapeHtml(a.category)}</span>` : ''}</div>
+                                            ${a.location ? `<div class="itinerary-location">📍 ${escapeHtml(a.location)}</div>` : ''}
+                                            ${a.notes ? `<div class="itinerary-notes">${escapeHtml(a.notes)}</div>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Google Maps
+        let map = null;
+        let mapMarkers = [];
+        let mapGeocoder = null;
+
+        const MARKER_COLORS = {
+            'Dining': 'red',
+            'Entertainment': 'blue',
+            'Experience': 'green',
+            'Other': 'yellow'
+        };
+
+        function initGoogleMap() {
+            const mapEl = document.getElementById('activitiesMap');
+            if (!mapEl) return;
+
+            map = new google.maps.Map(mapEl, {
+                center: { lat: 36.1699, lng: -115.1398 },
+                zoom: 12,
+                styles: [
+                    { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+                    { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+                    { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+                    { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+                    { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+                    { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
+                    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
+                    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
+                    { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
+                    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#746855' }] },
+                    { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1f2835' }] },
+                    { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#f3d19c' }] },
+                    { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
+                    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
+                    { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#515c6d' }] }
+                ]
+            });
+            mapGeocoder = new google.maps.Geocoder();
+            updateMap();
+        }
+
+        async function updateMap() {
+            if (!map || !mapGeocoder) return;
+
+            mapMarkers.forEach(m => m.setMap(null));
+            mapMarkers = [];
+
+            const withLocations = activities.filter(a => a.location && a.location.trim());
+            const mapEl = document.getElementById('activitiesMap');
+            const legendEl = document.getElementById('mapLegend');
+
+            if (!withLocations.length) {
+                if (mapEl) mapEl.style.display = 'none';
+                if (legendEl) legendEl.style.display = 'none';
+                return;
+            }
+            if (mapEl) mapEl.style.display = 'block';
+            if (legendEl) legendEl.style.display = 'flex';
+
+            const bounds = new google.maps.LatLngBounds();
+
+            for (const activity of withLocations) {
+                try {
+                    const result = await new Promise((resolve, reject) => {
+                        mapGeocoder.geocode({ address: activity.location }, (results, status) => {
+                            if (status === 'OK' && results[0]) resolve(results[0]);
+                            else reject(new Error(status));
+                        });
+                    });
+
+                    const pos = result.geometry.location;
+                    const colorName = MARKER_COLORS[activity.category] || 'yellow';
+
+                    const marker = new google.maps.Marker({
+                        position: pos,
+                        map,
+                        title: activity.name,
+                        icon: `https://maps.google.com/mapfiles/ms/icons/${colorName}-dot.png`
+                    });
+
+                    const safeHtml = s => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const infoContent = `<div style="color:#1a1a1a;max-width:200px;padding:4px;"><strong>${safeHtml(activity.name)}</strong>${activity.category ? `<br><span style="font-size:0.85em;">${safeHtml(activity.category)}</span>` : ''}${activity.location ? `<br><span style="font-size:0.8em;color:#555;">${safeHtml(activity.location)}</span>` : ''}</div>`;
+                    const infoWindow = new google.maps.InfoWindow({ content: infoContent });
+                    marker.addListener('click', () => infoWindow.open(map, marker));
+
+                    mapMarkers.push(marker);
+                    bounds.extend(pos);
+                } catch {
+                    // skip activities that can't be geocoded
+                }
+            }
+
+            if (mapMarkers.length > 0) {
+                map.fitBounds(bounds);
+                if (mapMarkers.length === 1) map.setZoom(15);
+            }
         }
 
         function renderBalances() {
@@ -1779,8 +2076,10 @@
         function renderAll() {
             renderExpenses();
             renderActivities();
+            renderItinerary();
             renderBalances();
             updateExpensePersonOptions();
+            updateMap();
         }
 
         // Event listeners
