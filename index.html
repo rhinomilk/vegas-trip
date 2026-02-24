@@ -629,6 +629,7 @@
         .itinerary-event {
             display: flex;
             gap: 14px;
+            align-items: flex-start;
             padding: 12px 14px;
             background: var(--input-bg);
             border-radius: 10px;
@@ -645,6 +646,13 @@
         .itinerary-event-name { font-weight: 600; margin-bottom: 4px; }
         .itinerary-location { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
         .itinerary-notes { font-size: 0.82rem; color: var(--text-muted); font-style: italic; margin-top: 3px; }
+        .itinerary-event-actions {
+            display: flex;
+            gap: 6px;
+            align-items: flex-start;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
 
         /* Map */
         .map-card { grid-column: 1 / -1; }
@@ -847,9 +855,6 @@
                     <input type="text" id="activityLocation" placeholder="Location / address (optional)" autocomplete="off">
                     <textarea id="activityNotes" placeholder="Notes (optional)" rows="2"></textarea>
                     <button class="btn-primary" onclick="addActivity()">Add Activity</button>
-                    <ul class="activity-list" id="activityList">
-                        <li class="empty-state">No activities planned yet</li>
-                    </ul>
                 </div>
 
                 <!-- Add Expense Section -->
@@ -926,6 +931,36 @@
                         <div class="modal-actions">
                             <button type="button" class="btn-secondary" onclick="closeCrewMemberModal()">Cancel</button>
                             <button type="submit" id="crewMemberModalSubmit" class="btn-primary">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Edit Activity Modal -->
+            <div id="editActivityModal" class="modal" style="display: none;">
+                <div class="modal-backdrop" onclick="closeEditActivityModal()"></div>
+                <div class="modal-content card">
+                    <h2>Edit Activity</h2>
+                    <form id="editActivityForm" onsubmit="saveEditActivity(); return false;">
+                        <input type="hidden" id="editActivityId" value="">
+                        <input id="editActivityName" type="text" placeholder="Activity name" required>
+                        <div class="input-row">
+                            <input id="editActivityDate" type="date">
+                            <input id="editActivityTime" type="time">
+                        </div>
+                        <select id="editActivityCategory">
+                            <option value="">Category (optional)</option>
+                            <option value="Dining">Dining</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Experience">Experience</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <input type="text" id="editActivityLocation" placeholder="Location / address (optional)" autocomplete="off">
+                        <textarea id="editActivityNotes" placeholder="Notes (optional)" rows="2"></textarea>
+                        <div id="editActivityError" class="error" style="margin-bottom: 12px;"></div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-secondary" onclick="closeEditActivityModal()">Cancel</button>
+                            <button type="submit" id="editActivitySubmit" class="btn-primary">Save</button>
                         </div>
                     </form>
                 </div>
@@ -1674,7 +1709,6 @@
                 document.getElementById('activityCategory').value = '';
                 document.getElementById('activityLocation').value = '';
                 document.getElementById('activityNotes').value = '';
-                renderActivities();
                 renderItinerary();
                 updateMap();
             } catch (e) {
@@ -1692,7 +1726,6 @@
                     .eq('id', id);
                 if (error) throw error;
                 activities = activities.filter(a => a.id !== id);
-                renderActivities();
                 renderItinerary();
                 updateMap();
             } catch (e) {
@@ -1858,96 +1891,71 @@
             `}).join('');
         }
 
-        function renderActivities() {
-            const list = document.getElementById('activityList');
-
-            if (activities.length === 0) {
-                list.innerHTML = '<li class="empty-state">No activities planned yet</li>';
-                return;
-            }
-
-            // Sort by date and time
-            const sorted = [...activities].sort((a, b) => {
-                const dateA = a.date + a.time;
-                const dateB = b.date + b.time;
-                return dateA.localeCompare(dateB);
-            });
-
-            list.innerHTML = sorted.map(a => {
-                const dateStr = a.date ? new Date(a.date + 'T12:00').toLocaleDateString('en-US', {
-                    weekday: 'short', month: 'short', day: 'numeric'
-                }) : '';
-                const timeStr = a.time ? new Date('2000-01-01T' + a.time).toLocaleTimeString('en-US', {
-                    hour: 'numeric', minute: '2-digit'
-                }) : '';
-                const catClass = a.category ? `cat-${a.category.toLowerCase()}` : '';
-
-                return `
-                    <li>
-                        <div class="activity-item">
-                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                                <span class="activity-name">${escapeHtml(a.name)}</span>
-                                ${a.category ? `<span class="category-badge ${catClass}">${escapeHtml(a.category)}</span>` : ''}
-                            </div>
-                            ${dateStr || timeStr ? `<span class="activity-date">${escapeHtml((dateStr + ' ' + timeStr).trim())}</span>` : ''}
-                            ${a.location ? `<span class="activity-date">📍 ${escapeHtml(a.location)}</span>` : ''}
-                            ${a.notes ? `<span class="activity-notes">${escapeHtml(a.notes)}</span>` : ''}
-                        </div>
-                        <button class="btn-danger" onclick="removeActivity(${JSON.stringify(a.id)})">Remove</button>
-                    </li>
-                `;
-            }).join('');
-        }
+        // renderActivities removed — activities are displayed in the Itinerary section
 
         function renderItinerary() {
             const content = document.getElementById('itineraryContent');
             if (!content) return;
 
-            const withDate = activities.filter(a => a.date);
-            if (!withDate.length) {
-                content.innerHTML = '<div class="empty-state">No activities with dates yet</div>';
+            if (!activities.length) {
+                content.innerHTML = '<div class="empty-state">No activities yet — add one in the Activities section</div>';
                 return;
             }
 
-            // Group by date
+            const renderEvent = a => {
+                const timeStr = a.time
+                    ? new Date('2000-01-01T' + a.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                    : '';
+                const catClass = a.category ? `cat-${a.category.toLowerCase()}` : 'cat-other';
+                return `
+                    <div class="itinerary-event">
+                        <div class="itinerary-time">${escapeHtml(timeStr) || '—'}</div>
+                        <div style="flex:1;min-width:0;">
+                            <div class="itinerary-event-name">${escapeHtml(a.name)}${a.category ? ` <span class="category-badge ${catClass}">${escapeHtml(a.category)}</span>` : ''}</div>
+                            ${a.location ? `<div class="itinerary-location">📍 ${escapeHtml(a.location)}</div>` : ''}
+                            ${a.notes ? `<div class="itinerary-notes">${escapeHtml(a.notes)}</div>` : ''}
+                        </div>
+                        <div class="itinerary-event-actions">
+                            <button class="btn-secondary btn-small" onclick="openEditActivityModal(${JSON.stringify(a.id)})">Edit</button>
+                            <button class="btn-danger" onclick="removeActivity(${JSON.stringify(a.id)})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            };
+
+            // Group dated activities by date
+            const withDate = activities.filter(a => a.date);
+            const noDate = activities.filter(a => !a.date);
             const byDate = {};
             withDate.forEach(a => {
                 if (!byDate[a.date]) byDate[a.date] = [];
                 byDate[a.date].push(a);
             });
-
             const sortedDates = Object.keys(byDate).sort();
 
-            content.innerHTML = sortedDates.map(date => {
+            let html = sortedDates.map(date => {
                 const dayActivities = byDate[date].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
                 const dateLabel = new Date(date + 'T12:00').toLocaleDateString('en-US', {
                     weekday: 'long', month: 'long', day: 'numeric'
                 });
-
                 return `
                     <div class="itinerary-day">
                         <div class="itinerary-date-header">${escapeHtml(dateLabel)}</div>
-                        <div class="itinerary-events">
-                            ${dayActivities.map(a => {
-                                const timeStr = a.time
-                                    ? new Date('2000-01-01T' + a.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-                                    : '';
-                                const catClass = a.category ? `cat-${a.category.toLowerCase()}` : 'cat-other';
-                                return `
-                                    <div class="itinerary-event">
-                                        <div class="itinerary-time">${escapeHtml(timeStr) || '—'}</div>
-                                        <div>
-                                            <div class="itinerary-event-name">${escapeHtml(a.name)}${a.category ? ` <span class="category-badge ${catClass}">${escapeHtml(a.category)}</span>` : ''}</div>
-                                            ${a.location ? `<div class="itinerary-location">📍 ${escapeHtml(a.location)}</div>` : ''}
-                                            ${a.notes ? `<div class="itinerary-notes">${escapeHtml(a.notes)}</div>` : ''}
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
+                        <div class="itinerary-events">${dayActivities.map(renderEvent).join('')}</div>
                     </div>
                 `;
             }).join('');
+
+            if (noDate.length) {
+                html += `
+                    <div class="itinerary-day">
+                        <div class="itinerary-date-header" style="color:var(--text-muted);">No date set</div>
+                        <div class="itinerary-events">${noDate.map(renderEvent).join('')}</div>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = html;
         }
 
         // Google Maps
@@ -2025,6 +2033,30 @@
                 console.warn('[Maps] Places library not available or #activityLocation not found');
             }
 
+            // Places Autocomplete on the Edit Activity modal location input
+            const editLocationInput = document.getElementById('editActivityLocation');
+            if (editLocationInput && google.maps.places && google.maps.places.Autocomplete) {
+                const editAutocomplete = new google.maps.places.Autocomplete(editLocationInput, {
+                    types: ['establishment', 'geocode'],
+                    fields: ['formatted_address', 'name', 'geometry']
+                });
+                editAutocomplete.addListener('place_changed', () => {
+                    const place = editAutocomplete.getPlace();
+                    if (place.formatted_address) {
+                        editLocationInput.value = place.formatted_address;
+                    }
+                });
+                editLocationInput.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') {
+                        const pac = document.querySelector('.pac-container');
+                        if (pac && getComputedStyle(pac).display !== 'none') {
+                            e.preventDefault();
+                        }
+                    }
+                });
+                console.log('[Maps] Places Autocomplete attached to #editActivityLocation');
+            }
+
             updateMap();
         }
 
@@ -2100,6 +2132,88 @@
             }
         }
 
+        // Edit Activity Modal
+        function openEditActivityModal(id) {
+            const activity = activities.find(a => String(a.id) === String(id));
+            if (!activity) return;
+
+            setEditActivityError('');
+            document.getElementById('editActivityId').value = String(id);
+            document.getElementById('editActivityName').value = activity.name || '';
+            document.getElementById('editActivityDate').value = activity.date || '';
+            document.getElementById('editActivityTime').value = activity.time || '';
+            document.getElementById('editActivityCategory').value = activity.category || '';
+            document.getElementById('editActivityLocation').value = activity.location || '';
+            document.getElementById('editActivityNotes').value = activity.notes || '';
+            document.getElementById('editActivityModal').style.display = 'flex';
+        }
+
+        function closeEditActivityModal() {
+            document.getElementById('editActivityModal').style.display = 'none';
+        }
+
+        function setEditActivityError(message) {
+            const el = document.getElementById('editActivityError');
+            if (!el) return;
+            if (!message) { el.style.display = 'none'; el.textContent = ''; return; }
+            el.style.display = 'block';
+            el.textContent = message;
+        }
+
+        async function saveEditActivity() {
+            const id = document.getElementById('editActivityId').value;
+            const name = document.getElementById('editActivityName').value.trim();
+            const date = document.getElementById('editActivityDate').value;
+            const time = document.getElementById('editActivityTime').value;
+            const category = document.getElementById('editActivityCategory').value;
+            const location = document.getElementById('editActivityLocation').value.trim();
+            const notes = document.getElementById('editActivityNotes').value.trim();
+
+            if (!name) { setEditActivityError('Activity name is required.'); return; }
+            if (!id) { setEditActivityError('No activity selected.'); return; }
+
+            const btn = document.getElementById('editActivitySubmit');
+            setEditActivityError('');
+            setBusy(btn, true, 'Saving...');
+
+            try {
+                const payload = {
+                    name,
+                    date: date || null,
+                    time: time || null,
+                    category: category || null,
+                    location: location || null,
+                    notes: notes || null
+                };
+                const { error } = await supabaseClient
+                    .from('activities')
+                    .update(payload)
+                    .eq('id', id);
+                if (error) throw error;
+
+                // Update local in-memory array
+                const idx = activities.findIndex(a => String(a.id) === String(id));
+                if (idx !== -1) {
+                    activities[idx] = {
+                        ...activities[idx],
+                        name,
+                        date: date || '',
+                        time: time || '',
+                        category: category || '',
+                        location: location || '',
+                        notes: notes || ''
+                    };
+                }
+                closeEditActivityModal();
+                renderItinerary();
+                updateMap();
+            } catch (e) {
+                setEditActivityError(e?.message || 'Could not save. Please try again.');
+            } finally {
+                setBusy(btn, false);
+            }
+        }
+
         function renderBalances() {
             const grid = document.getElementById('balanceGrid');
             const settlementsDiv = document.getElementById('settlements');
@@ -2159,7 +2273,6 @@
 
         function renderAll() {
             renderExpenses();
-            renderActivities();
             renderItinerary();
             renderBalances();
             updateExpensePersonOptions();
