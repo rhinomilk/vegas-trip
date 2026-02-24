@@ -647,14 +647,14 @@
         .itinerary-notes { font-size: 0.82rem; color: var(--text-muted); font-style: italic; margin-top: 3px; }
 
         /* Map */
+        .map-card { grid-column: 1 / -1; }
         #activitiesMap {
             width: 100%;
-            height: 300px;
+            height: 420px;
             border-radius: 10px;
             margin-top: 16px;
             background: var(--input-bg);
             border: 1px solid var(--border);
-            display: none;
         }
         .map-legend {
             display: none;
@@ -675,6 +675,29 @@
             border-radius: 50%;
             flex-shrink: 0;
         }
+        /* Places Autocomplete dark theme */
+        .pac-container {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            margin-top: 4px;
+        }
+        .pac-item {
+            padding: 10px 14px;
+            border-top: 1px solid #333;
+            color: #ffffff;
+            font-size: 0.9rem;
+            cursor: pointer;
+            background: transparent;
+        }
+        .pac-item:first-child { border-top: none; }
+        .pac-item:hover, .pac-item-selected { background: #252525; }
+        .pac-item-query { color: #ffffff; font-size: 0.9rem; }
+        .pac-matched { color: #00e676; font-weight: 600; }
+        .pac-icon { display: none; }
 </style>
 </head>
 <body>
@@ -776,6 +799,26 @@
             </header>
 
             <div class="grid">
+                <!-- Itinerary Section - full width -->
+                <div class="card itinerary-card" id="itinerarySection">
+                    <h2>Itinerary</h2>
+                    <div id="itineraryContent">
+                        <div class="empty-state">No activities with dates yet</div>
+                    </div>
+                </div>
+
+                <!-- Map Section - full width -->
+                <div class="card map-card" id="mapSection">
+                    <h2>Map</h2>
+                    <div id="activitiesMap"></div>
+                    <div class="map-legend" id="mapLegend">
+                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#c0392b;"></div> Dining</div>
+                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#2980b9;"></div> Entertainment</div>
+                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#27ae60;"></div> Experience</div>
+                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#f39c12;"></div> Other</div>
+                    </div>
+                </div>
+
                 <!-- Crew Section -->
                 <div class="card" id="crewSection">
                     <h2>Crew</h2>
@@ -801,30 +844,15 @@
                         <option value="Experience">Experience</option>
                         <option value="Other">Other</option>
                     </select>
-                    <input type="text" id="activityLocation" placeholder="Location / address (optional)">
+                    <input type="text" id="activityLocation" placeholder="Location / address (optional)" autocomplete="off">
                     <textarea id="activityNotes" placeholder="Notes (optional)" rows="2"></textarea>
                     <button class="btn-primary" onclick="addActivity()">Add Activity</button>
                     <ul class="activity-list" id="activityList">
                         <li class="empty-state">No activities planned yet</li>
                     </ul>
-                    <div id="activitiesMap"></div>
-                    <div class="map-legend" id="mapLegend">
-                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#c0392b;"></div> Dining</div>
-                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#2980b9;"></div> Entertainment</div>
-                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#27ae60;"></div> Experience</div>
-                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#f39c12;"></div> Other</div>
-                    </div>
                 </div>
 
-                <!-- Itinerary Section -->
-                <div class="card itinerary-card" id="itinerarySection">
-                    <h2>Itinerary</h2>
-                    <div id="itineraryContent">
-                        <div class="empty-state">No activities with dates yet</div>
-                    </div>
-                </div>
-
-                <!-- Expenses Section -->
+                <!-- Add Expense Section -->
                 <div class="card" id="expensesSection">
                     <h2>Add Expense</h2>
                     <input type="text" id="expenseDesc" placeholder="What was it for? (e.g., Hotel, Show tickets)">
@@ -847,7 +875,7 @@
                 </div>
 
                 <!-- Expense List -->
-                <div class="card">
+                <div class="card" id="expenseListSection">
                     <h2>Expenses</h2>
                     <ul class="expense-list" id="expenseList">
                         <li class="empty-state">No expenses recorded yet</li>
@@ -905,17 +933,21 @@
         </div>
         <!-- Bottom navigation (main app) -->
         <nav class="bottom-nav" id="bottomNav" style="display: none;">
-            <button type="button" data-target="crewSection" class="active">
+            <button type="button" data-target="itinerarySection" class="active">
+                <span class="icon"></span>
+                <span>Itinerary</span>
+            </button>
+            <button type="button" data-target="mapSection">
+                <span class="icon"></span>
+                <span>Map</span>
+            </button>
+            <button type="button" data-target="crewSection">
                 <span class="icon"></span>
                 <span>Crew</span>
             </button>
             <button type="button" data-target="activitiesSection">
                 <span class="icon"></span>
                 <span>Activities</span>
-            </button>
-            <button type="button" data-target="itinerarySection">
-                <span class="icon"></span>
-                <span>Itinerary</span>
             </button>
             <button type="button" data-target="expensesSection">
                 <span class="icon"></span>
@@ -929,7 +961,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCfzTQe1VjbTeaDUEnOicNHCcBWtTaQLmo&callback=initGoogleMap"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCfzTQe1VjbTeaDUEnOicNHCcBWtTaQLmo&libraries=places&callback=initGoogleMap"></script>
     <script>
         // -----------------------------
         // Supabase + Trip gating
@@ -1931,65 +1963,117 @@
         };
 
         function initGoogleMap() {
+            console.log('[Maps] initGoogleMap called');
             const mapEl = document.getElementById('activitiesMap');
-            if (!mapEl) return;
+            if (!mapEl) {
+                console.error('[Maps] #activitiesMap element not found');
+                return;
+            }
+
+            const darkStyles = [
+                { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+                { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+                { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+                { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+                { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
+                { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
+                { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
+                { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
+                { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
+                { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#746855' }] },
+                { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1f2835' }] },
+                { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#f3d19c' }] },
+                { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
+                { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
+                { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#515c6d' }] }
+            ];
 
             map = new google.maps.Map(mapEl, {
                 center: { lat: 36.1699, lng: -115.1398 },
-                zoom: 12,
-                styles: [
-                    { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
-                    { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
-                    { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
-                    { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
-                    { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
-                    { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
-                    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
-                    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
-                    { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
-                    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#746855' }] },
-                    { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1f2835' }] },
-                    { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#f3d19c' }] },
-                    { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
-                    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
-                    { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#515c6d' }] }
-                ]
+                zoom: 2,
+                styles: darkStyles
             });
             mapGeocoder = new google.maps.Geocoder();
+            console.log('[Maps] Map and Geocoder initialized');
+
+            // Places Autocomplete on the Add Activity location input
+            const locationInput = document.getElementById('activityLocation');
+            if (locationInput && google.maps.places && google.maps.places.Autocomplete) {
+                const autocomplete = new google.maps.places.Autocomplete(locationInput, {
+                    types: ['establishment', 'geocode'],
+                    fields: ['formatted_address', 'name', 'geometry']
+                });
+                autocomplete.addListener('place_changed', () => {
+                    const place = autocomplete.getPlace();
+                    console.log('[Maps] Place selected from autocomplete:', place.name, '|', place.formatted_address);
+                    // Use the full formatted address for geocoding consistency
+                    if (place.formatted_address) {
+                        locationInput.value = place.formatted_address;
+                    }
+                });
+                // Prevent Enter from submitting the form while the dropdown is open
+                locationInput.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') {
+                        const pac = document.querySelector('.pac-container');
+                        if (pac && getComputedStyle(pac).display !== 'none') {
+                            e.preventDefault();
+                        }
+                    }
+                });
+                console.log('[Maps] Places Autocomplete attached to #activityLocation');
+            } else {
+                console.warn('[Maps] Places library not available or #activityLocation not found');
+            }
+
             updateMap();
         }
 
         async function updateMap() {
-            if (!map || !mapGeocoder) return;
+            if (!map || !mapGeocoder) {
+                console.log('[Maps] updateMap called but map/geocoder not ready yet');
+                return;
+            }
 
+            // Clear existing markers
             mapMarkers.forEach(m => m.setMap(null));
             mapMarkers = [];
 
             const withLocations = activities.filter(a => a.location && a.location.trim());
-            const mapEl = document.getElementById('activitiesMap');
             const legendEl = document.getElementById('mapLegend');
+            console.log(`[Maps] updateMap: ${activities.length} total activities, ${withLocations.length} have locations`);
 
             if (!withLocations.length) {
-                if (mapEl) mapEl.style.display = 'none';
                 if (legendEl) legendEl.style.display = 'none';
+                // Reset to default view when no pins
+                map.setCenter({ lat: 36.1699, lng: -115.1398 });
+                map.setZoom(2);
                 return;
             }
-            if (mapEl) mapEl.style.display = 'block';
             if (legendEl) legendEl.style.display = 'flex';
 
+            // Trigger resize in case the map container was hidden during init
+            google.maps.event.trigger(map, 'resize');
+
             const bounds = new google.maps.LatLngBounds();
+            const safeHtml = s => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
             for (const activity of withLocations) {
+                console.log(`[Maps] Geocoding "${activity.location}" for activity "${activity.name}"`);
                 try {
                     const result = await new Promise((resolve, reject) => {
                         mapGeocoder.geocode({ address: activity.location }, (results, status) => {
-                            if (status === 'OK' && results[0]) resolve(results[0]);
-                            else reject(new Error(status));
+                            console.log(`[Maps] Geocode result for "${activity.location}": status=${status}, count=${results ? results.length : 0}`);
+                            if (status === 'OK' && results && results[0]) {
+                                resolve(results[0]);
+                            } else {
+                                reject(new Error(`Geocoding status: ${status}`));
+                            }
                         });
                     });
 
                     const pos = result.geometry.location;
                     const colorName = MARKER_COLORS[activity.category] || 'yellow';
+                    console.log(`[Maps] Placing ${colorName} marker at ${pos.lat().toFixed(4)},${pos.lng().toFixed(4)} for "${activity.name}"`);
 
                     const marker = new google.maps.Marker({
                         position: pos,
@@ -1998,18 +2082,18 @@
                         icon: `https://maps.google.com/mapfiles/ms/icons/${colorName}-dot.png`
                     });
 
-                    const safeHtml = s => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    const infoContent = `<div style="color:#1a1a1a;max-width:200px;padding:4px;"><strong>${safeHtml(activity.name)}</strong>${activity.category ? `<br><span style="font-size:0.85em;">${safeHtml(activity.category)}</span>` : ''}${activity.location ? `<br><span style="font-size:0.8em;color:#555;">${safeHtml(activity.location)}</span>` : ''}</div>`;
+                    const infoContent = `<div style="color:#1a1a1a;max-width:220px;padding:4px 2px;"><strong>${safeHtml(activity.name)}</strong>${activity.category ? `<br><span style="font-size:0.82em;color:#444;">${safeHtml(activity.category)}</span>` : ''}${activity.location ? `<br><span style="font-size:0.8em;color:#666;">${safeHtml(activity.location)}</span>` : ''}</div>`;
                     const infoWindow = new google.maps.InfoWindow({ content: infoContent });
                     marker.addListener('click', () => infoWindow.open(map, marker));
 
                     mapMarkers.push(marker);
                     bounds.extend(pos);
-                } catch {
-                    // skip activities that can't be geocoded
+                } catch (err) {
+                    console.error(`[Maps] Failed to geocode "${activity.location}":`, err.message);
                 }
             }
 
+            console.log(`[Maps] Placed ${mapMarkers.length} of ${withLocations.length} markers`);
             if (mapMarkers.length > 0) {
                 map.fitBounds(bounds);
                 if (mapMarkers.length === 1) map.setZoom(15);
