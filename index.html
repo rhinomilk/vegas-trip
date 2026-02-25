@@ -219,9 +219,8 @@
         }
 
         /* Bottom mobile nav */
-        
 
-.bottom-nav {
+        .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
@@ -230,14 +229,20 @@
             background: var(--bg-card);
             border-top: 1px solid var(--border);
             display: flex;
-            justify-content: space-around;
             align-items: center;
-            padding: 0 8px;
+            padding: 0 4px;
             z-index: 50;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            gap: 2px;
         }
 
+        .bottom-nav::-webkit-scrollbar { display: none; }
+
         .bottom-nav button {
-            flex: 1;
+            flex: none;
+            min-width: 68px;
             background: transparent;
             border: none;
             border-radius: 10px;
@@ -251,7 +256,8 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            padding: 6px 4px;
+            padding: 6px 10px;
+            white-space: nowrap;
         }
 
         .bottom-nav button .icon {
@@ -653,6 +659,12 @@
             flex-shrink: 0;
             margin-left: auto;
         }
+        .itinerary-accommodation {
+            border-left-color: #F0C040;
+        }
+        .itinerary-accommodation .itinerary-time {
+            color: #F0C040;
+        }
 
         /* Map */
         .map-card { grid-column: 1 / -1; }
@@ -820,10 +832,11 @@
                     <h2>Map</h2>
                     <div id="activitiesMap"></div>
                     <div class="map-legend" id="mapLegend">
-                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#c0392b;"></div> Dining</div>
-                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#2980b9;"></div> Entertainment</div>
-                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#27ae60;"></div> Experience</div>
+                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#e74c3c;"></div> Dining</div>
+                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#3498db;"></div> Entertainment</div>
+                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#2ecc71;"></div> Experience</div>
                         <div class="map-legend-item"><div class="map-legend-dot" style="background:#f39c12;"></div> Other</div>
+                        <div class="map-legend-item"><div class="map-legend-dot" style="background:#F0C040;"></div> Stay</div>
                     </div>
                 </div>
 
@@ -855,6 +868,28 @@
                     <input type="text" id="activityLocation" placeholder="Location / address (optional)" autocomplete="off">
                     <textarea id="activityNotes" placeholder="Notes (optional)" rows="2"></textarea>
                     <button class="btn-primary" onclick="addActivity()">Add Activity</button>
+                </div>
+
+                <!-- Accommodations Section -->
+                <div class="card" id="accommodationsSection">
+                    <h2>Accommodations</h2>
+                    <input type="text" id="accommodationName" placeholder="Hotel / property name">
+                    <input type="text" id="accommodationAddress" placeholder="Address" autocomplete="off">
+                    <div class="input-row">
+                        <div class="datetime-group" style="flex:1;margin-bottom:0;">
+                            <div class="field-label">Check-in</div>
+                            <input type="date" id="accommodationCheckIn">
+                        </div>
+                        <div class="datetime-group" style="flex:1;margin-bottom:0;">
+                            <div class="field-label">Check-out</div>
+                            <input type="date" id="accommodationCheckOut">
+                        </div>
+                    </div>
+                    <textarea id="accommodationNotes" placeholder="Notes (optional)" rows="2"></textarea>
+                    <button class="btn-primary" onclick="addAccommodation()">Add Accommodation</button>
+                    <ul class="crew-list" id="accommodationList">
+                        <li class="empty-state">No accommodations added yet</li>
+                    </ul>
                 </div>
 
                 <!-- Add Expense Section -->
@@ -965,6 +1000,34 @@
                     </form>
                 </div>
             </div>
+            <!-- Edit Accommodation Modal -->
+            <div id="editAccommodationModal" class="modal" style="display: none;">
+                <div class="modal-backdrop" onclick="closeEditAccommodationModal()"></div>
+                <div class="modal-content card">
+                    <h2>Edit Accommodation</h2>
+                    <form id="editAccommodationForm" onsubmit="saveEditAccommodation(); return false;">
+                        <input type="hidden" id="editAccommodationId" value="">
+                        <input id="editAccommodationName" type="text" placeholder="Hotel / property name" required>
+                        <input type="text" id="editAccommodationAddress" placeholder="Address" autocomplete="off">
+                        <div class="input-row">
+                            <div class="datetime-group" style="flex:1;margin-bottom:0;">
+                                <div class="field-label">Check-in</div>
+                                <input id="editAccommodationCheckIn" type="date">
+                            </div>
+                            <div class="datetime-group" style="flex:1;margin-bottom:0;">
+                                <div class="field-label">Check-out</div>
+                                <input id="editAccommodationCheckOut" type="date">
+                            </div>
+                        </div>
+                        <textarea id="editAccommodationNotes" placeholder="Notes (optional)" rows="2"></textarea>
+                        <div id="editAccommodationError" class="error" style="margin-bottom: 12px;"></div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-secondary" onclick="closeEditAccommodationModal()">Cancel</button>
+                            <button type="submit" id="editAccommodationSubmit" class="btn-primary">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
         <!-- Bottom navigation (main app) -->
         <nav class="bottom-nav" id="bottomNav" style="display: none;">
@@ -983,6 +1046,10 @@
             <button type="button" data-target="activitiesSection">
                 <span class="icon"></span>
                 <span>Activities</span>
+            </button>
+            <button type="button" data-target="accommodationsSection">
+                <span class="icon"></span>
+                <span>Stays</span>
             </button>
             <button type="button" data-target="expensesSection">
                 <span class="icon"></span>
@@ -1232,12 +1299,14 @@
         async function enterTrip(tripRow) {
             persistCurrentTrip(tripRow);
 
-            // Reset in-memory state for the selected trip; load expenses and activities from Supabase.
+            // Reset in-memory state for the selected trip; load all data from Supabase.
             crewMembers = [];
             expenses = [];
             activities = [];
+            accommodations = [];
             await loadExpenses();
             await loadActivities();
+            await loadAccommodations();
             renderAll();
             showApp();
         }
@@ -1403,6 +1472,29 @@
             } catch (e) {
                 console.error('Failed to load activities:', e);
                 activities = [];
+            }
+        }
+
+        async function loadAccommodations() {
+            if (!currentTrip?.trip_code) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('accommodations')
+                    .select('id, name, address, check_in, check_out, notes')
+                    .eq('trip_code', currentTrip.trip_code)
+                    .order('check_in', { ascending: true });
+                if (error) throw error;
+                accommodations = (data || []).map(row => ({
+                    id: row.id,
+                    name: row.name || '',
+                    address: row.address || '',
+                    check_in: row.check_in || '',
+                    check_out: row.check_out || '',
+                    notes: row.notes || ''
+                }));
+            } catch (e) {
+                console.error('Failed to load accommodations:', e);
+                accommodations = [];
             }
         }
 
@@ -1651,6 +1743,7 @@
                 await supabaseClient.from('crew').delete().eq('trip_code', tripCode);
                 await supabaseClient.from('expenses').delete().eq('trip_code', tripCode);
                 await supabaseClient.from('activities').delete().eq('trip_code', tripCode);
+                await supabaseClient.from('accommodations').delete().eq('trip_code', tripCode);
                 const { error } = await supabaseClient.from('trips').delete().eq('trip_code', tripCode);
                 if (error) throw error;
                 clearPersistedTrip();
@@ -1660,10 +1753,11 @@
             }
         }
 
-        // Data storage (crew, expenses, and activities from Supabase)
+        // Data storage (crew, expenses, activities, and accommodations from Supabase)
         let crewMembers = [];
         let expenses = [];
         let activities = [];
+        let accommodations = [];
 
         // Add an activity
         async function addActivity() {
@@ -1897,12 +1991,32 @@
             const content = document.getElementById('itineraryContent');
             if (!content) return;
 
-            if (!activities.length) {
+            if (!activities.length && !accommodations.length) {
                 content.innerHTML = '<div class="empty-state">No activities yet — add one in the Activities section</div>';
                 return;
             }
 
-            const renderEvent = a => {
+            // Build combined event list grouped by date
+            const byDate = {};
+            const noDateItems = [];
+
+            const addToDate = (date, item) => {
+                if (!byDate[date]) byDate[date] = [];
+                byDate[date].push(item);
+            };
+
+            activities.forEach(a => {
+                if (a.date) addToDate(a.date, { _type: 'activity', _sortKey: a.time || '~~', ...a });
+                else noDateItems.push({ _type: 'activity', _sortKey: '~~', ...a });
+            });
+
+            accommodations.forEach(acc => {
+                if (acc.check_in) addToDate(acc.check_in, { _type: 'accom-in', _sortKey: '00', ...acc });
+                if (acc.check_out) addToDate(acc.check_out, { _type: 'accom-out', _sortKey: '00', ...acc });
+                if (!acc.check_in && !acc.check_out) noDateItems.push({ _type: 'accom-in', _sortKey: '00', ...acc });
+            });
+
+            const renderActivityRow = a => {
                 const timeStr = a.time
                     ? new Date('2000-01-01T' + a.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
                     : '';
@@ -1919,40 +2033,49 @@
                             <button class="btn-secondary btn-small" onclick="openEditActivityModal(${JSON.stringify(a.id)})">Edit</button>
                             <button class="btn-danger" onclick="removeActivity(${JSON.stringify(a.id)})">Delete</button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             };
 
-            // Group dated activities by date
-            const withDate = activities.filter(a => a.date);
-            const noDate = activities.filter(a => !a.date);
-            const byDate = {};
-            withDate.forEach(a => {
-                if (!byDate[a.date]) byDate[a.date] = [];
-                byDate[a.date].push(a);
-            });
+            const renderAccomRow = item => {
+                const isIn = item._type === 'accom-in';
+                const label = isIn ? '🏨 Check-in' : '🏨 Check-out';
+                return `
+                    <div class="itinerary-event itinerary-accommodation">
+                        <div class="itinerary-time">${label}</div>
+                        <div style="flex:1;min-width:0;">
+                            <div class="itinerary-event-name">${escapeHtml(item.name)}</div>
+                            ${item.address ? `<div class="itinerary-location">📍 ${escapeHtml(item.address)}</div>` : ''}
+                            ${item.notes ? `<div class="itinerary-notes">${escapeHtml(item.notes)}</div>` : ''}
+                        </div>
+                        <div class="itinerary-event-actions">
+                            <button class="btn-secondary btn-small" onclick="openEditAccommodationModal(${JSON.stringify(item.id)})">Edit</button>
+                            <button class="btn-danger" onclick="removeAccommodation(${JSON.stringify(item.id)})">Delete</button>
+                        </div>
+                    </div>`;
+            };
+
+            const renderRow = item => item._type === 'activity' ? renderActivityRow(item) : renderAccomRow(item);
+
             const sortedDates = Object.keys(byDate).sort();
 
             let html = sortedDates.map(date => {
-                const dayActivities = byDate[date].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+                const events = byDate[date].sort((a, b) => a._sortKey.localeCompare(b._sortKey));
                 const dateLabel = new Date(date + 'T12:00').toLocaleDateString('en-US', {
                     weekday: 'long', month: 'long', day: 'numeric'
                 });
                 return `
                     <div class="itinerary-day">
                         <div class="itinerary-date-header">${escapeHtml(dateLabel)}</div>
-                        <div class="itinerary-events">${dayActivities.map(renderEvent).join('')}</div>
-                    </div>
-                `;
+                        <div class="itinerary-events">${events.map(renderRow).join('')}</div>
+                    </div>`;
             }).join('');
 
-            if (noDate.length) {
+            if (noDateItems.length) {
                 html += `
                     <div class="itinerary-day">
                         <div class="itinerary-date-header" style="color:var(--text-muted);">No date set</div>
-                        <div class="itinerary-events">${noDate.map(renderEvent).join('')}</div>
-                    </div>
-                `;
+                        <div class="itinerary-events">${noDateItems.map(renderRow).join('')}</div>
+                    </div>`;
             }
 
             content.innerHTML = html;
@@ -1963,12 +2086,45 @@
         let mapMarkers = [];
         let mapGeocoder = null;
 
-        const MARKER_COLORS = {
-            'Dining': 'red',
-            'Entertainment': 'blue',
-            'Experience': 'green',
-            'Other': 'yellow'
+        const CATEGORY_HEX_COLORS = {
+            'Dining': '#e74c3c',
+            'Entertainment': '#3498db',
+            'Experience': '#2ecc71',
+            'Other': '#f39c12'
         };
+        const ACCOMMODATION_COLOR = '#F0C040';
+
+        function geocodeAddress(address) {
+            return new Promise((resolve, reject) => {
+                mapGeocoder.geocode({ address }, (results, status) => {
+                    if (status === 'OK' && results && results[0]) {
+                        resolve(results[0].geometry.location);
+                    } else {
+                        reject(new Error(`Geocode failed: ${status}`));
+                    }
+                });
+            });
+        }
+
+        function createLabeledPin(hexColor, label, symbol) {
+            const short = label.length > 16 ? label.slice(0, 15) + '\u2026' : label;
+            const fontSize = 9;
+            const pillW = Math.max(short.length * 5.6 + 16, 36);
+            const pillH = 16;
+            const circleR = 10;
+            const svgW = Math.max(pillW, circleR * 2 + 4);
+            const cx = svgW / 2;
+            const cy = circleR + 2;
+            const pillY = cy + circleR + 2;
+            const svgH = pillY + pillH + 2;
+            const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}"><circle cx="${cx}" cy="${cy}" r="${circleR}" fill="${hexColor}" stroke="#000" stroke-width="1.5"/><text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="10" fill="#fff" font-family="Arial,sans-serif" font-weight="bold">${esc(symbol)}</text><rect x="${cx - pillW / 2}" y="${pillY}" width="${pillW}" height="${pillH}" rx="3" fill="#111" opacity="0.88"/><text x="${cx}" y="${pillY + 11}" text-anchor="middle" font-size="${fontSize}" fill="#fff" font-family="Arial,sans-serif">${esc(short)}</text></svg>`;
+            return {
+                url: 'data:image/svg+xml,' + encodeURIComponent(svg),
+                scaledSize: new google.maps.Size(svgW, svgH),
+                anchor: new google.maps.Point(cx, cy)
+            };
+        }
 
         function initGoogleMap() {
             console.log('[Maps] initGoogleMap called');
@@ -2090,6 +2246,46 @@
                 console.log('[Maps] Places Autocomplete attached to #editActivityLocation');
             }
 
+            // Places Autocomplete on the Add Accommodation address input
+            const addAccAddr = document.getElementById('accommodationAddress');
+            if (addAccAddr && google.maps.places && google.maps.places.Autocomplete) {
+                const accAC = new google.maps.places.Autocomplete(addAccAddr, {
+                    types: ['establishment', 'geocode'],
+                    fields: ['formatted_address', 'name', 'geometry']
+                });
+                accAC.addListener('place_changed', () => {
+                    const place = accAC.getPlace();
+                    if (place.formatted_address) addAccAddr.value = place.formatted_address;
+                });
+                addAccAddr.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') {
+                        const pac = document.querySelector('.pac-container');
+                        if (pac && getComputedStyle(pac).display !== 'none') e.preventDefault();
+                    }
+                });
+                console.log('[Maps] Places Autocomplete attached to #accommodationAddress');
+            }
+
+            // Places Autocomplete on the Edit Accommodation modal address input
+            const editAccAddr = document.getElementById('editAccommodationAddress');
+            if (editAccAddr && google.maps.places && google.maps.places.Autocomplete) {
+                const editAccAC = new google.maps.places.Autocomplete(editAccAddr, {
+                    types: ['establishment', 'geocode'],
+                    fields: ['formatted_address', 'name', 'geometry']
+                });
+                editAccAC.addListener('place_changed', () => {
+                    const place = editAccAC.getPlace();
+                    if (place.formatted_address) editAccAddr.value = place.formatted_address;
+                });
+                editAccAddr.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') {
+                        const pac = document.querySelector('.pac-container');
+                        if (pac && getComputedStyle(pac).display !== 'none') e.preventDefault();
+                    }
+                });
+                console.log('[Maps] Places Autocomplete attached to #editAccommodationAddress');
+            }
+
             updateMap();
         }
 
@@ -2103,65 +2299,239 @@
             mapMarkers.forEach(m => m.setMap(null));
             mapMarkers = [];
 
-            const withLocations = activities.filter(a => a.location && a.location.trim());
+            const actWithLoc = activities.filter(a => a.location && a.location.trim());
+            const accWithAddr = accommodations.filter(a => a.address && a.address.trim());
             const legendEl = document.getElementById('mapLegend');
-            console.log(`[Maps] updateMap: ${activities.length} total activities, ${withLocations.length} have locations`);
+            console.log(`[Maps] updateMap: ${actWithLoc.length} activities, ${accWithAddr.length} accommodations to pin`);
 
-            if (!withLocations.length) {
+            if (!actWithLoc.length && !accWithAddr.length) {
                 if (legendEl) legendEl.style.display = 'none';
-                // Reset to default view when no pins
                 map.setCenter({ lat: 36.1699, lng: -115.1398 });
                 map.setZoom(2);
                 return;
             }
             if (legendEl) legendEl.style.display = 'flex';
 
-            // Trigger resize in case the map container was hidden during init
             google.maps.event.trigger(map, 'resize');
 
             const bounds = new google.maps.LatLngBounds();
             const safeHtml = s => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-            for (const activity of withLocations) {
-                console.log(`[Maps] Geocoding "${activity.location}" for activity "${activity.name}"`);
+            // Pin activities with category-colored labeled pins
+            for (const activity of actWithLoc) {
+                console.log(`[Maps] Geocoding activity "${activity.name}" at "${activity.location}"`);
                 try {
-                    const result = await new Promise((resolve, reject) => {
-                        mapGeocoder.geocode({ address: activity.location }, (results, status) => {
-                            console.log(`[Maps] Geocode result for "${activity.location}": status=${status}, count=${results ? results.length : 0}`);
-                            if (status === 'OK' && results && results[0]) {
-                                resolve(results[0]);
-                            } else {
-                                reject(new Error(`Geocoding status: ${status}`));
-                            }
-                        });
-                    });
-
-                    const pos = result.geometry.location;
-                    const colorName = MARKER_COLORS[activity.category] || 'yellow';
-                    console.log(`[Maps] Placing ${colorName} marker at ${pos.lat().toFixed(4)},${pos.lng().toFixed(4)} for "${activity.name}"`);
-
-                    const marker = new google.maps.Marker({
-                        position: pos,
-                        map,
-                        title: activity.name,
-                        icon: `https://maps.google.com/mapfiles/ms/icons/${colorName}-dot.png`
-                    });
-
+                    const pos = await geocodeAddress(activity.location);
+                    const hex = CATEGORY_HEX_COLORS[activity.category] || CATEGORY_HEX_COLORS['Other'];
+                    const symbol = (activity.category || 'O')[0].toUpperCase();
+                    const icon = createLabeledPin(hex, activity.name, symbol);
+                    const marker = new google.maps.Marker({ position: pos, map, title: activity.name, icon });
                     const infoContent = `<div style="color:#1a1a1a;max-width:220px;padding:4px 2px;"><strong>${safeHtml(activity.name)}</strong>${activity.category ? `<br><span style="font-size:0.82em;color:#444;">${safeHtml(activity.category)}</span>` : ''}${activity.location ? `<br><span style="font-size:0.8em;color:#666;">${safeHtml(activity.location)}</span>` : ''}</div>`;
                     const infoWindow = new google.maps.InfoWindow({ content: infoContent });
                     marker.addListener('click', () => infoWindow.open(map, marker));
-
                     mapMarkers.push(marker);
                     bounds.extend(pos);
+                    console.log(`[Maps] Placed activity pin for "${activity.name}"`);
                 } catch (err) {
-                    console.error(`[Maps] Failed to geocode "${activity.location}":`, err.message);
+                    console.error(`[Maps] Failed to geocode activity "${activity.name}":`, err.message);
                 }
             }
 
-            console.log(`[Maps] Placed ${mapMarkers.length} of ${withLocations.length} markers`);
+            // Pin accommodations with gold labeled pins
+            for (const acc of accWithAddr) {
+                console.log(`[Maps] Geocoding accommodation "${acc.name}" at "${acc.address}"`);
+                try {
+                    const pos = await geocodeAddress(acc.address);
+                    const icon = createLabeledPin(ACCOMMODATION_COLOR, acc.name, 'H');
+                    const marker = new google.maps.Marker({ position: pos, map, title: acc.name, icon });
+                    const infoContent = `<div style="color:#1a1a1a;max-width:220px;padding:4px 2px;"><strong>${safeHtml(acc.name)}</strong><br><span style="font-size:0.82em;color:#444;">Accommodation</span>${acc.address ? `<br><span style="font-size:0.8em;color:#666;">${safeHtml(acc.address)}</span>` : ''}</div>`;
+                    const infoWindow = new google.maps.InfoWindow({ content: infoContent });
+                    marker.addListener('click', () => infoWindow.open(map, marker));
+                    mapMarkers.push(marker);
+                    bounds.extend(pos);
+                    console.log(`[Maps] Placed accommodation pin for "${acc.name}"`);
+                } catch (err) {
+                    console.error(`[Maps] Failed to geocode accommodation "${acc.name}":`, err.message);
+                }
+            }
+
+            console.log(`[Maps] Placed ${mapMarkers.length} markers total`);
             if (mapMarkers.length > 0) {
                 map.fitBounds(bounds);
                 if (mapMarkers.length === 1) map.setZoom(15);
+            }
+        }
+
+        // Accommodations CRUD
+        async function addAccommodation() {
+            const name = document.getElementById('accommodationName').value.trim();
+            const address = document.getElementById('accommodationAddress').value.trim();
+            const check_in = document.getElementById('accommodationCheckIn').value;
+            const check_out = document.getElementById('accommodationCheckOut').value;
+            const notes = document.getElementById('accommodationNotes').value.trim();
+
+            if (!name) return;
+            if (!currentTrip?.trip_code) return;
+
+            const payload = {
+                trip_code: currentTrip.trip_code,
+                name,
+                address: address || null,
+                check_in: check_in || null,
+                check_out: check_out || null,
+                notes: notes || null
+            };
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('accommodations')
+                    .insert(payload)
+                    .select('id, name, address, check_in, check_out, notes')
+                    .single();
+                if (error) throw error;
+                accommodations.push({
+                    id: data.id,
+                    name: data.name || name,
+                    address: data.address || '',
+                    check_in: data.check_in || '',
+                    check_out: data.check_out || '',
+                    notes: data.notes || ''
+                });
+                document.getElementById('accommodationName').value = '';
+                document.getElementById('accommodationAddress').value = '';
+                document.getElementById('accommodationCheckIn').value = '';
+                document.getElementById('accommodationCheckOut').value = '';
+                document.getElementById('accommodationNotes').value = '';
+                renderAccommodations();
+                renderItinerary();
+                updateMap();
+            } catch (e) {
+                alert(e?.message || 'Could not add accommodation. Please try again.');
+            }
+        }
+
+        async function removeAccommodation(id) {
+            if (!id) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('accommodations')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+                accommodations = accommodations.filter(a => a.id !== id);
+                renderAccommodations();
+                renderItinerary();
+                updateMap();
+            } catch (e) {
+                alert(e?.message || 'Could not delete accommodation. Please try again.');
+            }
+        }
+
+        function renderAccommodations() {
+            const list = document.getElementById('accommodationList');
+            if (!list) return;
+
+            if (!accommodations.length) {
+                list.innerHTML = '<li class="empty-state">No accommodations added yet</li>';
+                return;
+            }
+
+            list.innerHTML = accommodations.map(acc => {
+                const dateRange = [
+                    acc.check_in ? 'In: ' + new Date(acc.check_in + 'T12:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '',
+                    acc.check_out ? 'Out: ' + new Date(acc.check_out + 'T12:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''
+                ].filter(Boolean).join(' · ');
+                const id = acc.id == null ? '' : String(acc.id);
+                return `
+                    <li data-acc-id="${escapeHtml(id)}">
+                        <div class="crew-name">${escapeHtml(acc.name)}</div>
+                        ${acc.address ? `<div class="crew-detail">📍 ${escapeHtml(acc.address)}</div>` : ''}
+                        ${dateRange ? `<div class="crew-detail">${escapeHtml(dateRange)}</div>` : ''}
+                        ${acc.notes ? `<div class="crew-detail" style="font-style:italic;">${escapeHtml(acc.notes)}</div>` : ''}
+                        <div class="crew-item-actions">
+                            <button type="button" class="btn-secondary" onclick="openEditAccommodationModal(this.closest('li').dataset.accId)">Edit</button>
+                            <button type="button" class="btn-danger" onclick="removeAccommodation(this.closest('li').dataset.accId)">Delete</button>
+                        </div>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        // Edit Accommodation Modal
+        function openEditAccommodationModal(id) {
+            const acc = accommodations.find(a => String(a.id) === String(id));
+            if (!acc) return;
+
+            setEditAccommodationError('');
+            document.getElementById('editAccommodationId').value = String(id);
+            document.getElementById('editAccommodationName').value = acc.name || '';
+            document.getElementById('editAccommodationAddress').value = acc.address || '';
+            document.getElementById('editAccommodationCheckIn').value = acc.check_in || '';
+            document.getElementById('editAccommodationCheckOut').value = acc.check_out || '';
+            document.getElementById('editAccommodationNotes').value = acc.notes || '';
+            document.getElementById('editAccommodationModal').style.display = 'flex';
+        }
+
+        function closeEditAccommodationModal() {
+            document.getElementById('editAccommodationModal').style.display = 'none';
+        }
+
+        function setEditAccommodationError(message) {
+            const el = document.getElementById('editAccommodationError');
+            if (!el) return;
+            if (!message) { el.style.display = 'none'; el.textContent = ''; return; }
+            el.style.display = 'block';
+            el.textContent = message;
+        }
+
+        async function saveEditAccommodation() {
+            const id = document.getElementById('editAccommodationId').value;
+            const name = document.getElementById('editAccommodationName').value.trim();
+            const address = document.getElementById('editAccommodationAddress').value.trim();
+            const check_in = document.getElementById('editAccommodationCheckIn').value;
+            const check_out = document.getElementById('editAccommodationCheckOut').value;
+            const notes = document.getElementById('editAccommodationNotes').value.trim();
+
+            if (!name) { setEditAccommodationError('Name is required.'); return; }
+            if (!id) { setEditAccommodationError('No accommodation selected.'); return; }
+
+            const btn = document.getElementById('editAccommodationSubmit');
+            setEditAccommodationError('');
+            setBusy(btn, true, 'Saving...');
+
+            try {
+                const payload = {
+                    name,
+                    address: address || null,
+                    check_in: check_in || null,
+                    check_out: check_out || null,
+                    notes: notes || null
+                };
+                const { error } = await supabaseClient
+                    .from('accommodations')
+                    .update(payload)
+                    .eq('id', id);
+                if (error) throw error;
+
+                const idx = accommodations.findIndex(a => String(a.id) === String(id));
+                if (idx !== -1) {
+                    accommodations[idx] = {
+                        ...accommodations[idx],
+                        name,
+                        address: address || '',
+                        check_in: check_in || '',
+                        check_out: check_out || '',
+                        notes: notes || ''
+                    };
+                }
+                closeEditAccommodationModal();
+                renderAccommodations();
+                renderItinerary();
+                updateMap();
+            } catch (e) {
+                setEditAccommodationError(e?.message || 'Could not save. Please try again.');
+            } finally {
+                setBusy(btn, false);
             }
         }
 
@@ -2308,6 +2678,7 @@
             renderExpenses();
             renderItinerary();
             renderBalances();
+            renderAccommodations();
             updateExpensePersonOptions();
             updateMap();
         }
